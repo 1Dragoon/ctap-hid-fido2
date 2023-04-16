@@ -70,7 +70,7 @@ fn non_discoverable_credentials(device: &FidoKeyHid, rpid: &str, pin: &str) -> R
     println!("- Register");
     let challenge = verifier::create_challenge();
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
         .build();
 
@@ -123,7 +123,7 @@ fn with_uv(device: &FidoKeyHid, rpid: &str) -> Result<()> {
     println!("- Register");
     let challenge = verifier::create_challenge();
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge).build();
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge).build();
 
     let attestation = device.make_credential_with_args(&make_credential_args)?;
     println!("-- Register Success");
@@ -178,7 +178,7 @@ fn with_key_type(
     println!("- Register");
     let challenge = verifier::create_challenge();
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
         .key_type(key_type)
         .build();
@@ -233,20 +233,17 @@ fn with_hmac(device: &FidoKeyHid, rpid: &str, pin: &str) -> Result<()> {
     let challenge = verifier::create_challenge();
     let ext = Mext::HmacSecret(Some(true));
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
-        .extensions(&vec![ext])
+        .extensions(&[ext])
         .build();
 
     let attestation = device.make_credential_with_args(&make_credential_args)?;
     println!("-- Register Success");
-    let find = attestation.extensions.iter().find(|it| {
-        if let Mext::HmacSecret(_) = it {
-            true
-        } else {
-            false
-        }
-    });
+    let find = attestation
+        .extensions
+        .iter()
+        .find(|it| matches!(it, Mext::HmacSecret(_)));
     if let Some(Mext::HmacSecret(is_hmac_secret)) = find {
         println!("--- HMAC Secret = {:?}", is_hmac_secret.unwrap());
     } else {
@@ -271,18 +268,15 @@ fn with_hmac(device: &FidoKeyHid, rpid: &str, pin: &str) -> Result<()> {
     let get_assertion_args = GetAssertionArgsBuilder::new(rpid, &challenge)
         .pin(pin)
         .credential_id(&verify_result.credential_id)
-        .extensions(&vec![ext])
+        .extensions(&[ext])
         .build();
 
     let assertions = device.get_assertion_with_args(&get_assertion_args)?;
     println!("-- Authenticate Success");
-    let find = assertions[0].extensions.iter().find(|it| {
-        if let Gext::HmacSecret(_) = it {
-            true
-        } else {
-            false
-        }
-    });
+    let find = assertions[0]
+        .extensions
+        .iter()
+        .find(|it| matches!(it, Gext::HmacSecret(_)));
     if let Some(Gext::HmacSecret(hmac_secret)) = find {
         println!(
             "--- HMAC Secret = {}",
@@ -317,7 +311,7 @@ fn without_pin(device: &FidoKeyHid, rpid: &str) -> Result<()> {
     println!("- Register");
     let challenge = verifier::create_challenge();
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .without_pin_and_uv()
         .build();
 
@@ -371,20 +365,17 @@ fn with_large_blob_key(device: &FidoKeyHid, rpid: &str, pin: &str) -> Result<()>
     let challenge = verifier::create_challenge();
     let ext = Mext::LargeBlobKey((Some(true), None));
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
-        .extensions(&vec![ext])
+        .extensions(&[ext])
         .build();
 
     let attestation = device.make_credential_with_args(&make_credential_args)?;
     println!("-- Register Success");
-    let find = attestation.extensions.iter().find(|it| {
-        if let Mext::LargeBlobKey((_, _)) = it {
-            true
-        } else {
-            false
-        }
-    });
+    let find = attestation
+        .extensions
+        .iter()
+        .find(|it| matches!(it, Mext::LargeBlobKey((_, _))));
     if let Some(Mext::LargeBlobKey((_, large_blob_key))) = find {
         println!(
             "--- Large Blob Key = {}",
@@ -411,18 +402,15 @@ fn with_large_blob_key(device: &FidoKeyHid, rpid: &str, pin: &str) -> Result<()>
     let get_assertion_args = GetAssertionArgsBuilder::new(rpid, &challenge)
         .pin(pin)
         .credential_id(&verify_result.credential_id)
-        .extensions(&vec![ext])
+        .extensions(&[ext])
         .build();
 
     let assertions = device.get_assertion_with_args(&get_assertion_args)?;
     println!("-- Authenticate Success");
-    let find = assertions[0].extensions.iter().find(|it| {
-        if let Gext::LargeBlobKey((_, _)) = it {
-            true
-        } else {
-            false
-        }
-    });
+    let find = assertions[0]
+        .extensions
+        .iter()
+        .find(|it| matches!(it, Gext::LargeBlobKey((_, _))));
     if let Some(Gext::LargeBlobKey((_, large_blob_key))) = find {
         println!(
             "--- Large Blob Key = {}",
@@ -460,20 +448,17 @@ fn with_min_pin_length_ex(device: &FidoKeyHid, rpid: &str, pin: &str) -> Result<
     let challenge = verifier::create_challenge();
     let ext = Mext::MinPinLength((Some(true), None));
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
-        .extensions(&vec![ext])
+        .extensions(&[ext])
         .build();
 
     let attestation = device.make_credential_with_args(&make_credential_args)?;
     println!("-- Register Success");
-    let find = attestation.extensions.iter().find(|it| {
-        if let Mext::MinPinLength((_, _)) = it {
-            true
-        } else {
-            false
-        }
-    });
+    let find = attestation
+        .extensions
+        .iter()
+        .find(|it| matches!(it, Mext::MinPinLength((_, _))));
     if let Some(Mext::MinPinLength((_, min_pin_length))) = find {
         println!("--- Min Pin Length = {:?}", min_pin_length);
     } else {

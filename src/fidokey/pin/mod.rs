@@ -71,8 +71,6 @@ mod tests {
         let key_agreement =
             client_pin_response::parse_cbor_client_pin_get_keyagreement(&response_cbor).unwrap();
         println!("authenticatorClientPIN (0x06) - getKeyAgreement");
-        println!("{}", key_agreement);
-
-        assert!(true);
+        println!("{key_agreement}");
     }
 }

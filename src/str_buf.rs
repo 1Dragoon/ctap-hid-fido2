@@ -7,9 +7,10 @@ pub struct StrBuf {
     pad: usize,
 }
 impl StrBuf {
-    pub fn new(pad_to_width: usize) -> Self {
-        StrBuf {
-            buf: String::from(""),
+    #[must_use]
+    pub const fn new(pad_to_width: usize) -> Self {
+        Self {
+            buf: String::new(),
             pad: pad_to_width,
         }
     }
@@ -27,13 +28,14 @@ impl StrBuf {
     }
 
     // create String from title and bytes
+    #[must_use]
     pub fn bufh(title: &str, bytes: &[u8]) -> String {
-        let mut strbuf = StrBuf::new(0);
+        let mut strbuf = Self::new(0);
         strbuf.appenh(title, bytes).build().to_string()
     }
 
     pub fn appent(&mut self, title: &str) -> &mut Self {
-        let tmp = format!("{}\n", title);
+        let tmp = format!("{title}\n");
         self.buf = self.buf.to_string() + &tmp;
         self
     }
@@ -54,6 +56,7 @@ impl StrBuf {
         self
     }
 
+    #[must_use]
     pub fn build(&self) -> &str {
         &self.buf
     }

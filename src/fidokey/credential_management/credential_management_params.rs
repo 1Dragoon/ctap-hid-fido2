@@ -26,8 +26,8 @@ pub struct CredentialsCount {
     pub max_possible_remaining_resident_credentials_count: u32,
 }
 impl CredentialsCount {
-    pub(crate) fn new(meta: &CredentialManagementData) -> CredentialsCount {
-        CredentialsCount {
+    pub(crate) const fn new(meta: &CredentialManagementData) -> Self {
+        Self {
             existing_resident_credentials_count: meta.existing_resident_credentials_count,
             max_possible_remaining_resident_credentials_count: meta
                 .max_possible_remaining_resident_credentials_count,
@@ -56,10 +56,10 @@ pub struct Rp {
     pub rpid_hash: Vec<u8>,
 }
 impl Rp {
-    pub(crate) fn new(meta: &CredentialManagementData) -> Rp {
-        Rp {
+    pub(crate) fn new(meta: &CredentialManagementData) -> Self {
+        Self {
             public_key_credential_rp_entity: meta.public_key_credential_rp_entity.clone(),
-            rpid_hash: meta.rpid_hash.to_vec(),
+            rpid_hash: meta.rpid_hash.clone(),
         }
     }
 }
@@ -77,25 +77,22 @@ impl fmt::Display for Rp {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub enum CredentialProtectionPolicy {
+    #[default]
     Unknown,
     UserVerificationOptional,
     UserVerificationOptionalWithCredentialIdList,
     UserVerificationRequired,
 }
-impl Default for CredentialProtectionPolicy {
-    fn default() -> Self {
-        CredentialProtectionPolicy::Unknown
-    }
-}
+
 impl From<u32> for CredentialProtectionPolicy {
-    fn from(from: u32) -> CredentialProtectionPolicy {
+    fn from(from: u32) -> Self {
         match from {
-            0x01 => CredentialProtectionPolicy::UserVerificationOptional,
-            0x02 => CredentialProtectionPolicy::UserVerificationOptionalWithCredentialIdList,
-            0x03 => CredentialProtectionPolicy::UserVerificationRequired,
-            _ => CredentialProtectionPolicy::Unknown,
+            0x01 => Self::UserVerificationOptional,
+            0x02 => Self::UserVerificationOptionalWithCredentialIdList,
+            0x03 => Self::UserVerificationRequired,
+            _ => Self::Unknown,
         }
     }
 }
@@ -108,8 +105,8 @@ pub struct Credential {
     pub cred_protect: CredentialProtectionPolicy,
 }
 impl Credential {
-    pub(crate) fn new(d: &CredentialManagementData) -> Credential {
-        Credential {
+    pub(crate) fn new(d: &CredentialManagementData) -> Self {
+        Self {
             public_key_credential_user_entity: d.public_key_credential_user_entity.clone(),
             public_key_credential_descriptor: d.public_key_credential_descriptor.clone(),
             public_key: d.public_key.clone(),

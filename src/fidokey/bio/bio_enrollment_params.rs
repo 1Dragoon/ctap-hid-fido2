@@ -29,7 +29,7 @@ impl fmt::Display for BioSensorInfo {
             FingerprintKind::SwipeType => {
                 strbuf.addln("  - swipe type fingerprints");
             }
-            _ => {
+            FingerprintKind::Unknown => {
                 strbuf.addln("  - unknown");
             }
         }
@@ -49,49 +49,43 @@ impl fmt::Display for BioSensorInfo {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub enum Modality {
+    #[default]
     Unknown,
     Fingerprint,
 }
-impl Default for Modality {
-    fn default() -> Self {
-        Modality::Unknown
-    }
-}
+
 impl From<u32> for Modality {
-    fn from(from: u32) -> Modality {
+    fn from(from: u32) -> Self {
         match from {
-            0x01 => Modality::Fingerprint,
-            _ => Modality::Unknown,
+            0x01 => Self::Fingerprint,
+            _ => Self::Unknown,
         }
     }
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub enum FingerprintKind {
+    #[default]
     Unknown = 0,
     TouchType = 1,
     SwipeType = 2,
 }
-impl Default for FingerprintKind {
-    fn default() -> Self {
-        FingerprintKind::Unknown
-    }
-}
+
 impl From<u32> for FingerprintKind {
-    fn from(from: u32) -> FingerprintKind {
+    fn from(from: u32) -> Self {
         match from {
-            0x01 => FingerprintKind::TouchType,
-            0x02 => FingerprintKind::SwipeType,
-            _ => FingerprintKind::Unknown,
+            0x01 => Self::TouchType,
+            0x02 => Self::SwipeType,
+            _ => Self::Unknown,
         }
     }
 }
 
 #[derive(Debug, Default, Clone)]
-pub(crate) struct BioEnrollmentData {
+pub struct BioEnrollmentData {
     pub modality: u32,
     pub fingerprint_kind: u32,
     pub max_capture_samples_required_for_enroll: u32,
@@ -103,9 +97,9 @@ pub(crate) struct BioEnrollmentData {
 }
 impl fmt::Display for BioEnrollmentData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut tmp_val = "".to_string();
-        for i in self.template_infos.iter() {
-            tmp_val.push_str(&format!("{}", i));
+        let mut tmp_val = String::new();
+        for i in &self.template_infos {
+            tmp_val.push_str(&i.to_string());
         }
 
         let mut strbuf = StrBuf::new(19);
@@ -137,8 +131,8 @@ pub struct TemplateInfo {
     pub template_friendly_name: Option<String>,
 }
 impl TemplateInfo {
-    pub fn new(template_id: &[u8], template_friendly_name: Option<&str>) -> TemplateInfo {
-        let mut ret = TemplateInfo {
+    pub fn new(template_id: &[u8], template_friendly_name: Option<&str>) -> Self {
+        let mut ret = Self {
             template_id: template_id.to_vec(),
             ..Default::default()
         };

@@ -28,10 +28,10 @@ impl SubCommandBase for SubCommand {
     fn has_param(&self) -> bool {
         matches!(
             self,
-            SubCommand::EnrollBegin(_)
-                | SubCommand::EnrollCaptureNextSample(_, _)
-                | SubCommand::SetFriendlyName(_)
-                | SubCommand::RemoveEnrollment(_)
+            Self::EnrollBegin(_)
+                | Self::EnrollCaptureNextSample(_, _)
+                | Self::SetFriendlyName(_)
+                | Self::RemoveEnrollment(_)
         )
     }
 }
@@ -48,7 +48,7 @@ pub fn create_payload(
         map.insert(Value::Integer(0x01), Value::Integer(0x01_i128));
 
         // subCommand(0x02)
-        let sub_cmd = Value::Integer(sub_command.id()? as i128);
+        let sub_cmd = Value::Integer(i128::from(sub_command.id()?));
         map.insert(Value::Integer(0x02), sub_cmd);
 
         // subCommandParams (0x03): Map containing following parameters
@@ -65,7 +65,7 @@ pub fn create_payload(
                 | SubCommand::RemoveEnrollment(ref template_info) => {
                     Some(to_value_template_info(template_info))
                 }
-                _ => (None),
+                _ => None,
             };
             if let Some(param) = param {
                 map.insert(Value::Integer(0x03), param.clone());
@@ -83,7 +83,7 @@ pub fn create_payload(
             let pin_uv_auth_param = {
                 let mut message = vec![0x01_u8];
                 message.append(&mut vec![sub_command.id()?]);
-                message.append(&mut sub_command_params_cbor.to_vec());
+                message.append(&mut sub_command_params_cbor);
                 let sig = enc_hmac_sha_256::authenticate(&pin_token.key, &message);
                 sig[0..16].to_vec()
             };
@@ -129,7 +129,7 @@ fn to_value_timeout(
         param.insert(Value::Integer(0x01), Value::Bytes(v.template_id.clone()));
     }
     if let Some(v) = timeout_milliseconds {
-        param.insert(Value::Integer(0x03), Value::Integer(v as i128));
+        param.insert(Value::Integer(0x03), Value::Integer(i128::from(v)));
     }
     Value::Map(param)
 }

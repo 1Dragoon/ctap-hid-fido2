@@ -7,6 +7,7 @@ use ring::signature;
 use x509_parser::prelude::*;
 
 // Create Random Data
+#[must_use]
 pub fn create_challenge() -> [u8; 32] {
     let rnd = ring::rand::SystemRandom::new();
     let mut tmp = [0; 32];
@@ -24,6 +25,7 @@ pub struct AttestationVerifyResult {
 }
 
 /// Verify Atterstaion Object
+#[must_use]
 pub fn verify_attestation(
     rpid: &str,
     challenge: &[u8],
@@ -58,13 +60,14 @@ pub fn verify_attestation(
 
     AttestationVerifyResult {
         is_success: result,
-        credential_id: attestation.credential_descriptor.id.to_vec(),
+        credential_id: attestation.credential_descriptor.id.clone(),
         credential_publickey_pem: attestation.credential_publickey.pem.to_string(),
-        credential_publickey_der: attestation.credential_publickey.der.to_vec(),
+        credential_publickey_der: attestation.credential_publickey.der.clone(),
     }
 }
 
 /// Verify Assertion Object
+#[must_use]
 pub fn verify_assertion(
     rpid: &str,
     publickey: &[u8],
@@ -129,7 +132,7 @@ fn print_verify_info(
     public_key_der: &[u8],
     message: &[u8],
     sig: &[u8],
-    verify_result: &Result<(), ring::error::Unspecified>,
+    verify_result: Result<(), ring::error::Unspecified>,
 ) {
     let public_key_pem = util::convert_to_publickey_pem(public_key_der);
 
@@ -151,6 +154,6 @@ fn print_verify_info(
         util::to_hex_str(message)
     );
     println!("- sig({:02})  = {:?}", sig.len(), util::to_hex_str(sig));
-    println!("- verify result = {:?}", verify_result);
+    println!("- verify result = {verify_result:?}");
     println!("-----------------------------");
 }

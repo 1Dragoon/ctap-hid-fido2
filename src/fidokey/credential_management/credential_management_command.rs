@@ -7,7 +7,7 @@ use serde_cbor::{to_vec, Value};
 use std::collections::BTreeMap;
 use strum_macros::EnumProperty;
 
-#[derive(Debug, Clone, PartialEq, EnumProperty)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumProperty)]
 pub enum SubCommand {
     #[strum(props(SubCommandId = "1"))]
     GetCredsMetadata,
@@ -28,24 +28,24 @@ impl SubCommandBase for SubCommand {
     fn has_param(&self) -> bool {
         matches!(
             self,
-            SubCommand::EnumerateCredentialsBegin(_)
-                | SubCommand::EnumerateCredentialsGetNextCredential(_)
-                | SubCommand::DeleteCredential(_)
-                | SubCommand::UpdateUserInformation(_, _)
+            Self::EnumerateCredentialsBegin(_)
+                | Self::EnumerateCredentialsGetNextCredential(_)
+                | Self::DeleteCredential(_)
+                | Self::UpdateUserInformation(_, _)
         )
     }
 }
 
 pub fn create_payload(
     pin_token: Option<pintoken::PinToken>,
-    sub_command: SubCommand,
+    sub_command: &SubCommand,
     use_pre_credential_management: bool,
 ) -> Result<Vec<u8>> {
     let mut map = BTreeMap::new();
 
     // subCommand(0x01)
     {
-        let sub_cmd = Value::Integer(sub_command.id()? as i128);
+        let sub_cmd = Value::Integer(i128::from(sub_command.id()?));
         map.insert(Value::Integer(0x01), sub_cmd);
     }
 
@@ -65,7 +65,7 @@ pub fn create_payload(
                 // credentialId (0x02): PublicKeyCredentialDescriptor of the credential to be deleted or updated.
                 Some(create_public_key_credential_descriptor(pkcd))
             }
-            _ => (None),
+            _ => None,
         };
         if let Some(param) = param {
             map.insert(Value::Integer(0x02), param.clone());
@@ -83,7 +83,7 @@ pub fn create_payload(
         // - authenticate(pinUvAuthToken, enumerateCredentialsBegin (0x04) || subCommandParams).
         // -- First 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken.
         let mut message = vec![sub_command.id()?];
-        message.append(&mut sub_command_params_cbor.to_vec());
+        message.append(&mut sub_command_params_cbor);
 
         let sig = enc_hmac_sha_256::authenticate(&pin_token.key, &message);
         let pin_uv_auth_param = sig[0..16].to_vec();

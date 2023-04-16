@@ -35,7 +35,7 @@ impl fmt::Display for CoseKey {
 // https://tex2e.github.io/rfc-translater/html/rfc8152.html
 impl CoseKey {
     pub fn new(cbor: &Value) -> Result<Self> {
-        let mut cose = CoseKey::default();
+        let mut cose = Self::default();
 
         if let Value::Map(xs) = cbor {
             for (key, val) in xs {
@@ -70,14 +70,14 @@ impl CoseKey {
                             //      6: Ed25519(OKP)
                             //println!("member = {:?} , val = {:?}",member,val);
                             cose.parameters.insert(
-                                NumCast::from(*member).ok_or(anyhow!("err"))?,
+                                NumCast::from(*member).ok_or_else(|| anyhow!("err"))?,
                                 Value::Integer(util::cbor_value_to_num(val)?),
                             );
                         }
                         -2 | -3 => {
                             //println!("member = {:?} , val = {:?}",member,val);
                             cose.parameters.insert(
-                                NumCast::from(*member).ok_or(anyhow!("err"))?,
+                                NumCast::from(*member).ok_or_else(|| anyhow!("err"))?,
                                 Value::Bytes(util::cbor_value_to_vec_u8(val)?),
                             );
                         }
@@ -95,15 +95,24 @@ impl CoseKey {
         map.insert(Value::Integer(3), Value::Integer(self.algorithm.into()));
         map.insert(
             Value::Integer(-1),
-            self.parameters.get(&-1).ok_or(anyhow!("err"))?.clone(),
+            self.parameters
+                .get(&-1)
+                .ok_or_else(|| anyhow!("err"))?
+                .clone(),
         );
         map.insert(
             Value::Integer(-2),
-            self.parameters.get(&-2).ok_or(anyhow!("err"))?.clone(),
+            self.parameters
+                .get(&-2)
+                .ok_or_else(|| anyhow!("err"))?
+                .clone(),
         );
         map.insert(
             Value::Integer(-3),
-            self.parameters.get(&-3).ok_or(anyhow!("err"))?.clone(),
+            self.parameters
+                .get(&-3)
+                .ok_or_else(|| anyhow!("err"))?
+                .clone(),
         );
         Ok(Value::Map(map))
     }
@@ -117,11 +126,11 @@ impl CoseKey {
 
             // 2.add X
             if let Some(Value::Bytes(bytes)) = self.parameters.get(&-2) {
-                pub_key.append(&mut bytes.to_vec());
+                pub_key.append(&mut bytes.clone());
             }
             // 3.add Y
             if let Some(Value::Bytes(bytes)) = self.parameters.get(&-3) {
-                pub_key.append(&mut bytes.to_vec());
+                pub_key.append(&mut bytes.clone());
             }
 
             pub_key

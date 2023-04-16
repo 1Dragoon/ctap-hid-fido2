@@ -22,8 +22,9 @@ pub struct Params {
 }
 
 impl Params {
-    pub fn new(rp_id: &str, challenge: Vec<u8>, user_id: Vec<u8>) -> Params {
-        Params {
+    #[must_use]
+    pub fn new(rp_id: &str, challenge: &[u8], user_id: &[u8]) -> Self {
+        Self {
             rp_id: rp_id.to_string(),
             user_id: user_id.to_vec(),
             client_data_hash: util::create_clientdata_hash(challenge),
@@ -33,6 +34,7 @@ impl Params {
     }
 }
 
+#[must_use]
 pub fn create_payload(params: Params, extensions: Option<&Vec<Extension>>) -> Vec<u8> {
     // 0x01 : clientDataHash
     let cdh = Value::Bytes(params.client_data_hash);
@@ -54,10 +56,10 @@ pub fn create_payload(params: Params, extensions: Option<&Vec<Extension>>) -> Ve
     // user id
     {
         let user_id = {
-            if !params.user_id.is_empty() {
-                params.user_id.to_vec()
-            } else {
+            if params.user_id.is_empty() {
                 vec![0x00]
+            } else {
+                params.user_id.clone()
             }
         };
         user_val.insert(Value::Text("id".to_string()), Value::Bytes(user_id));
@@ -65,10 +67,10 @@ pub fn create_payload(params: Params, extensions: Option<&Vec<Extension>>) -> Ve
     // user name
     {
         let user_name = {
-            if !params.user_name.is_empty() {
-                params.user_name.to_string()
-            } else {
+            if params.user_name.is_empty() {
                 " ".to_string()
+            } else {
+                params.user_name.to_string()
             }
         };
         user_val.insert(Value::Text("name".to_string()), Value::Text(user_name));
@@ -76,10 +78,10 @@ pub fn create_payload(params: Params, extensions: Option<&Vec<Extension>>) -> Ve
     // displayName
     {
         let display_name = {
-            if !params.user_display_name.is_empty() {
-                params.user_display_name.to_string()
-            } else {
+            if params.user_display_name.is_empty() {
                 " ".to_string()
+            } else {
+                params.user_display_name.to_string()
             }
         };
         user_val.insert(
@@ -121,31 +123,32 @@ pub fn create_payload(params: Params, extensions: Option<&Vec<Extension>>) -> Ve
     );
 
     // 0x06 : extensions
-    let extensions = if let Some(extensions) = extensions {
-        let mut map = BTreeMap::new();
-        for ext in extensions {
-            match *ext {
-                Extension::CredBlob((ref n, _)) => {
-                    let x = n.clone().unwrap();
-                    map.insert(Value::Text(ext.to_string()), Value::Bytes(x));
-                }
-                Extension::CredProtect(n) => {
-                    map.insert(
-                        Value::Text(ext.to_string()),
-                        Value::Integer(n.unwrap() as i128),
-                    );
-                }
-                Extension::HmacSecret(n)
-                | Extension::LargeBlobKey((n, _))
-                | Extension::MinPinLength((n, _)) => {
-                    map.insert(Value::Text(ext.to_string()), Value::Bool(n.unwrap()));
-                }
-            };
-        }
-        Some(Value::Map(map))
-    } else {
-        None
-    };
+    let extensions = extensions.map_or_else(
+        || None,
+        |extensions| {
+            let mut map = BTreeMap::new();
+            for ext in extensions {
+                match *ext {
+                    Extension::CredBlob((ref n, _)) => {
+                        let x = n.clone().unwrap();
+                        map.insert(Value::Text(ext.to_string()), Value::Bytes(x));
+                    }
+                    Extension::CredProtect(n) => {
+                        map.insert(
+                            Value::Text(ext.to_string()),
+                            Value::Integer(n.unwrap() as i128),
+                        );
+                    }
+                    Extension::HmacSecret(n)
+                    | Extension::LargeBlobKey((n, _))
+                    | Extension::MinPinLength((n, _)) => {
+                        map.insert(Value::Text(ext.to_string()), Value::Bool(n.unwrap()));
+                    }
+                };
+            }
+            Some(Value::Map(map))
+        },
+    );
 
     /*
     let user_id = {
@@ -172,10 +175,10 @@ pub fn create_payload(params: Params, extensions: Option<&Vec<Extension>>) -> Ve
 
     // pinAuth(0x08)
     let pin_auth = {
-        if !params.pin_auth.is_empty() {
-            Some(Value::Bytes(params.pin_auth))
-        } else {
+        if params.pin_auth.is_empty() {
             None
+        } else {
+            Some(Value::Bytes(params.pin_auth))
         }
     };
 

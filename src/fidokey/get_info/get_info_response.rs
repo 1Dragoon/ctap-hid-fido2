@@ -43,7 +43,7 @@ pub fn parse_cbor(bytes: &[u8]) -> Result<get_info_params::Info> {
                                         if let Value::Text(keystr) = key {
                                             keystr.to_string()
                                         } else {
-                                            "".to_string()
+                                            String::new()
                                         }
                                     };
 
@@ -53,7 +53,7 @@ pub fn parse_cbor(bytes: &[u8]) -> Result<get_info_params::Info> {
                                         } else if let Value::Integer(valint) = val {
                                             valint.to_string()
                                         } else {
-                                            "".to_string()
+                                            String::new()
                                         }
                                     };
 
@@ -72,7 +72,7 @@ pub fn parse_cbor(bytes: &[u8]) -> Result<get_info_params::Info> {
                 0x11 => info.preferred_platform_uv_attempts = util::cbor_value_to_num(val)?,
                 0x12 => info.uv_modality = util::cbor_value_to_num(val)?,
                 0x14 => info.remaining_discoverable_credentials = util::cbor_value_to_num(val)?,
-                _ => println!("parse_cbor_member - unknown info {:?}", member),
+                _ => println!("parse_cbor_member - unknown info {member:?}"),
             }
         }
     }

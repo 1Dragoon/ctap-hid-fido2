@@ -56,9 +56,10 @@ pub enum Extension {
 }
 
 impl Extension {
-    pub fn create_hmac_secret_from_string(message: &str) -> Extension {
+    #[must_use]
+    pub fn create_hmac_secret_from_string(message: &str) -> Self {
         let hasher = digest::digest(&digest::SHA256, message.as_bytes());
-        Extension::HmacSecret(Some(<[u8; 32]>::try_from(hasher.as_ref()).unwrap()))
+        Self::HmacSecret(Some(<[u8; 32]>::try_from(hasher.as_ref()).unwrap()))
     }
 }
 
@@ -72,6 +73,7 @@ pub struct GetAssertionArgs<'a> {
     pub extensions: Option<Vec<Extension>>,
 }
 impl<'a> GetAssertionArgs<'a> {
+    #[must_use]
     pub fn builder() -> GetAssertionArgsBuilder<'a> {
         GetAssertionArgsBuilder::default()
     }
@@ -87,6 +89,7 @@ pub struct GetAssertionArgsBuilder<'a> {
     extensions: Option<Vec<Extension>>,
 }
 impl<'a> GetAssertionArgsBuilder<'a> {
+    #[must_use]
     pub fn new(rpid: &str, challenge: &[u8]) -> GetAssertionArgsBuilder<'a> {
         GetAssertionArgsBuilder::<'_> {
             uv: Some(true),
@@ -96,34 +99,40 @@ impl<'a> GetAssertionArgsBuilder<'a> {
         }
     }
 
-    pub fn pin(mut self, pin: &'a str) -> GetAssertionArgsBuilder<'a> {
+    #[must_use]
+    pub const fn pin(mut self, pin: &'a str) -> GetAssertionArgsBuilder<'a> {
         self.pin = Some(pin);
         //self.uv = Some(false);
         self.uv = None;
         self
     }
 
-    pub fn without_pin_and_uv(mut self) -> GetAssertionArgsBuilder<'a> {
+    #[must_use]
+    pub const fn without_pin_and_uv(mut self) -> GetAssertionArgsBuilder<'a> {
         self.pin = None;
         self.uv = None;
         self
     }
 
+    #[must_use]
     pub fn extensions(mut self, extensions: &[Extension]) -> GetAssertionArgsBuilder<'a> {
         self.extensions = Some(extensions.to_vec());
         self
     }
 
+    #[must_use]
     pub fn credential_id(mut self, credential_id: &[u8]) -> GetAssertionArgsBuilder<'a> {
         self.credential_ids.clear();
         self.add_credential_id(credential_id)
     }
 
+    #[must_use]
     pub fn add_credential_id(mut self, credential_id: &[u8]) -> GetAssertionArgsBuilder<'a> {
         self.credential_ids.push(credential_id.to_vec());
         self
     }
 
+    #[must_use]
     pub fn build(self) -> GetAssertionArgs<'a> {
         GetAssertionArgs {
             rpid: self.rpid,

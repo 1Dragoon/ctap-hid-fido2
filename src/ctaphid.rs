@@ -69,12 +69,12 @@ fn get_responce_status(packet: &[u8]) -> Result<(u8, u16, u8)> {
     let command = packet[4];
 
     // response size
-    let payload_size = ((packet[5] as u16) << 8) + packet[6] as u16;
+    let payload_size = (u16::from(packet[5]) << 8) + u16::from(packet[6]);
 
     // status
     let response_status = if command == CTAPHID_MSG {
         // length check ()
-        if payload_size > packet.len() as u16 {
+        if payload_size as usize > packet.len() {
             return Err(anyhow!("u2f response size error?"));
         }
         // U2F(last byte of data)
@@ -87,7 +87,7 @@ fn get_responce_status(packet: &[u8]) -> Result<(u8, u16, u8)> {
     Ok((command, payload_size, response_status))
 }
 
-fn is_responce_error(status: (u8, u16, u8)) -> bool {
+const fn is_responce_error(status: (u8, u16, u8)) -> bool {
     if status.0 == CTAPHID_MSG {
         status.2 != 0x90
     } else {
@@ -103,8 +103,8 @@ fn get_status_message(status: (u8, u16, u8)) -> String {
     }
 }
 
-fn get_data(status: (u8, u16, u8), payload: Vec<u8>) -> Vec<u8> {
-    let statindex = if status.0 == CTAPHID_MSG { 0 } else { 1 };
+fn get_data(status: (u8, u16, u8), payload: &[u8]) -> Vec<u8> {
+    let statindex = u16::from(status.0 != CTAPHID_MSG);
 
     // data size
     let datasize = if status.0 == CTAPHID_MSG {
@@ -125,11 +125,11 @@ fn get_data(status: (u8, u16, u8), payload: Vec<u8>) -> Vec<u8> {
 }
 
 fn ctaphid_cbor_responce_get_payload_1(packet: &[u8]) -> Vec<u8> {
-    (&packet[7..64]).to_vec()
+    packet[7..64].to_vec()
 }
 
 fn ctaphid_cbor_responce_get_payload_2(packet: &[u8]) -> Vec<u8> {
-    (&packet[5..64]).to_vec()
+    packet[5..64].to_vec()
 }
 
 fn create_initialization_packet(cid: &[u8], commoand: u8, payload: &[u8]) -> (Vec<u8>, bool) {
@@ -157,11 +157,12 @@ fn create_initialization_packet(cid: &[u8], commoand: u8, payload: &[u8]) -> (Ve
 
     // payload
     let mut size = payload.len();
-    let mut next = false;
-    if payload.len() > PAYLOAD_SIZE_AN_INITIALIZATION_PACKET {
+    let next = if payload.len() > PAYLOAD_SIZE_AN_INITIALIZATION_PACKET {
         size = PAYLOAD_SIZE_AN_INITIALIZATION_PACKET;
-        next = true;
-    }
+        true
+    } else {
+        false
+    };
 
     cmd[8..(size + 8)].clone_from_slice(&payload[..size]);
 
@@ -188,11 +189,12 @@ fn create_continuation_packet(seqno: u8, cid: &[u8], payload: &[u8]) -> (Vec<u8>
 
     // payload
     let mut size: usize = payload.len() - index;
-    let mut next = false;
-    if size > PAYLOAD_SIZE_A_CONTINUATION_PACKET {
+    let next = if size > PAYLOAD_SIZE_A_CONTINUATION_PACKET {
         size = PAYLOAD_SIZE_A_CONTINUATION_PACKET;
-        next = true;
-    }
+        true
+    } else {
+        false
+    };
 
     cmd[6..(size + 6)].clone_from_slice(&payload[index..(size + index)]);
     (cmd, next)
@@ -224,13 +226,12 @@ pub fn ctaphid_wink(device: &FidoKeyHid, cid: &[u8]) -> Result<()> {
 
     device.write(&cmd).map_err(Error::msg)?;
 
-    let _buf = device.read().map_err(Error::msg)?;
-
     if device.enable_log {
+        let buf = device.read().map_err(Error::msg)?;
         println!(
             "- response wink({:02})    = {:?}",
-            _buf.len(),
-            util::to_hex_str(&_buf)
+            buf.len(),
+            util::to_hex_str(&buf)
         );
     }
 
@@ -342,14 +343,14 @@ fn ctaphid_cbormsg(
                 payload.append(&mut p2);
 
                 // 次のパケットがある?
-                if (payload.len() as u16) >= payload_size {
+                if payload.len() >= payload_size as usize {
                     break;
                 }
             }
         }
 
         // get data
-        let data = get_data(st, payload);
+        let data = get_data(st, &payload);
 
         if device.enable_log {
             println!();
@@ -377,7 +378,7 @@ pub fn send_apdu(
     ins: u8,
     p1: u8,
     p2: u8,
-    data: &[u8],
+    data: Option<&[u8]>,
 ) -> Result<Vec<u8>> {
     /*
     Packs and sends an APDU for use in CTAP1 commands.
@@ -393,7 +394,8 @@ pub fn send_apdu(
     :raise: ApduError
     */
 
-    let mut apdu: Vec<u8> = vec![0; 7 + data.len()];
+    let data_length = data.map(<[u8]>::len).unwrap_or_default();
+    let mut apdu: Vec<u8> = vec![0; 7 + data_length];
     // reserved
     apdu[0] = cla;
     // U2F Command
@@ -406,13 +408,14 @@ pub fn send_apdu(
     // data-len(3byte)
     apdu[4] = 0;
     // High part of payload length
-    apdu[5] = ((data.len() as u16) >> 8) as u8;
+    apdu[5] = ((data_length as u16) >> 8) as u8;
     // Low part of payload length
-    apdu[6] = data.len() as u8;
+    apdu[6] = data_length as u8;
 
     // data
-    let size = data.len();
-    apdu[7..(size + 7)].clone_from_slice(&data[..size]);
+    if let Some(data) = data {
+        apdu[7..(data_length + 7)].clone_from_slice(&data[..data_length]);
+    }
 
     ctaphid_msg(device, cid, &apdu)
 }

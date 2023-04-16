@@ -5,6 +5,7 @@ use serde_cbor::Value;
 use std::collections::BTreeMap;
 
 #[allow(dead_code)]
+#[derive(Clone, Copy)]
 pub enum SubCommand {
     GetRetries = 0x01,
     GetKeyAgreement = 0x02,
@@ -47,6 +48,7 @@ fn create_payload_get_keyagreement() -> Vec<u8> {
     to_payload(map)
 }
 
+#[must_use]
 pub fn create_payload_get_pin_token(key_agreement: &cose::CoseKey, pin_hash_enc: &[u8]) -> Vec<u8> {
     let mut map = BTreeMap::new();
     insert_pin_protocol(&mut map);
@@ -56,6 +58,7 @@ pub fn create_payload_get_pin_token(key_agreement: &cose::CoseKey, pin_hash_enc:
     to_payload(map)
 }
 
+#[must_use]
 pub fn create_payload_set_pin(
     key_agreement: &cose::CoseKey,
     pin_auth: &[u8],
@@ -70,6 +73,7 @@ pub fn create_payload_set_pin(
     to_payload(map)
 }
 
+#[must_use]
 pub fn create_payload_change_pin(
     key_agreement: &cose::CoseKey,
     pin_auth: &[u8],
@@ -86,6 +90,7 @@ pub fn create_payload_change_pin(
     to_payload(map)
 }
 
+#[must_use]
 pub fn create_payload_get_pin_uv_auth_token_using_pin_with_permissions(
     key_agreement: &cose::CoseKey,
     pin_hash_enc: &[u8],
@@ -138,7 +143,7 @@ fn to_payload(map: BTreeMap<Value, Value>) -> Vec<u8> {
     let cbor = Value::Map(map);
     let mut payload = [ctapdef::AUTHENTICATOR_CLIENT_PIN].to_vec();
     payload.append(&mut serde_cbor::to_vec(&cbor).unwrap());
-    payload.to_vec()
+    payload.clone()
 }
 
 // 0x01 : pin_protocol
@@ -168,10 +173,10 @@ fn insert_key_agreement(map: &mut BTreeMap<Value, Value>, key_agreement: &cose::
         ka_val.insert(Value::Integer(-1), Value::Integer(*ival));
     }
     if let Value::Bytes(bval) = key_agreement.parameters.get(&-2).unwrap() {
-        ka_val.insert(Value::Integer(-2), Value::Bytes(bval.to_vec()));
+        ka_val.insert(Value::Integer(-2), Value::Bytes(bval.clone()));
     }
     if let Value::Bytes(bval) = key_agreement.parameters.get(&-3).unwrap() {
-        ka_val.insert(Value::Integer(-3), Value::Bytes(bval.to_vec()));
+        ka_val.insert(Value::Integer(-3), Value::Bytes(bval.clone()));
     }
     let ka = Value::Map(ka_val);
 
@@ -200,11 +205,11 @@ pub fn create_payload(sub_command: SubCommand) -> Result<Vec<u8>> {
     match sub_command {
         SubCommand::GetRetries => Ok(create_payload_get_retries()),
         SubCommand::GetKeyAgreement => Ok(create_payload_get_keyagreement()),
-        SubCommand::SetPin => Err(anyhow!("Not Supported")),
-        SubCommand::ChangePin => Err(anyhow!("Not Supported")),
-        SubCommand::GetPinToken => Err(anyhow!("Not Supported")),
-        SubCommand::GetPinUvAuthTokenUsingUvWithPermissions => Err(anyhow!("Not Supported")),
+        SubCommand::SetPin
+        | SubCommand::ChangePin
+        | SubCommand::GetPinToken
+        | SubCommand::GetPinUvAuthTokenUsingUvWithPermissions
+        | SubCommand::GetPinUvAuthTokenUsingPinWithPermissions => Err(anyhow!("Not Supported")),
         SubCommand::GetUVRetries => Ok(create_payload_get_uv_retries()),
-        SubCommand::GetPinUvAuthTokenUsingPinWithPermissions => Err(anyhow!("Not Supported")),
     }
 }

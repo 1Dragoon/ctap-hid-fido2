@@ -8,14 +8,14 @@ use get_assertion_params::{Assertion, Extension as Gext, GetAssertionArgs};
 pub use get_assertion_params::{Extension, GetAssertionArgsBuilder};
 
 impl FidoKeyHid {
-    /// Create a new assertion manually specifying the args using GetAssertionArgs
+    /// Create a new assertion manually specifying the args using `GetAssertionArgs`
     pub fn get_assertion_with_args(&self, args: &GetAssertionArgs) -> Result<Vec<Assertion>> {
         let dummy_credentials;
-        let credential_ids = if !args.credential_ids.is_empty() {
-            &args.credential_ids
-        } else {
+        let credential_ids = if args.credential_ids.is_empty() {
             dummy_credentials = vec![];
             &dummy_credentials
+        } else {
+            &args.credential_ids
         };
 
         let extensions = if args.extensions.is_some() {
@@ -27,7 +27,7 @@ impl FidoKeyHid {
         // init
         let cid = ctaphid::ctaphid_init(self)?;
 
-        let hmac_ext = create_hmacext(self, &cid, extensions)?;
+        let hmac_ext = create_hmacext(self, cid, extensions)?;
 
         // pin token
         let pin_token = {
@@ -42,8 +42,8 @@ impl FidoKeyHid {
         let send_payload = {
             let mut params = get_assertion_command::Params::new(
                 &args.rpid,
-                args.challenge.to_vec(),
-                credential_ids.to_vec(),
+                &args.challenge,
+                credential_ids.clone(),
             );
             params.option_up = true;
             params.option_uv = args.uv;
@@ -62,7 +62,7 @@ impl FidoKeyHid {
 
         let ass = get_assertion_response::parse_cbor(
             &response_cbor,
-            hmac_ext.map(|ext| ext.shared_secret),
+            &hmac_ext.map(|ext| ext.shared_secret),
         )?;
 
         let mut asss = vec![ass];
@@ -137,22 +137,20 @@ impl FidoKeyHid {
 fn get_next_assertion(device: &FidoKeyHid, cid: &[u8]) -> Result<Assertion> {
     let send_payload = get_next_assertion_command::create_payload();
     let response_cbor = ctaphid::ctaphid_cbor(device, cid, &send_payload)?;
-    get_assertion_response::parse_cbor(&response_cbor, None)
+    get_assertion_response::parse_cbor(&response_cbor, &None)
 }
 
 fn create_hmacext(
     device: &FidoKeyHid,
-    cid: &[u8; 4],
+    cid: [u8; 4],
     extensions: Option<&Vec<Gext>>,
 ) -> Result<Option<HmacExt>> {
     if let Some(extensions) = extensions {
         if let Some(Gext::HmacSecret(n)) = extensions.iter().next() {
             let mut hmac_ext = HmacExt::default();
-            hmac_ext.create(device, cid, &n.unwrap(), None)?;
+            hmac_ext.create(device, &cid, &n.unwrap(), None)?;
             return Ok(Some(hmac_ext));
         }
-        Ok(None)
-    } else {
-        Ok(None)
     }
+    Ok(None)
 }

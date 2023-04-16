@@ -1,5 +1,4 @@
 use crate::str_buf::StrBuf;
-use anyhow::Result;
 use std::fmt;
 
 #[derive(Debug, Default, Clone)]
@@ -11,17 +10,17 @@ pub struct Flags {
 }
 
 impl Flags {
-    pub(crate) fn parse(byte: u8) -> Result<Flags> {
-        let flags = Flags {
+    pub(crate) const fn parse(byte: u8) -> Self {
+        Self {
             user_present_result: matches!(byte & 0x01, 0x01),
             user_verified_result: matches!(byte & 0x04, 0x04),
             attested_credential_data_included: matches!(byte & 0x40, 0x40),
             extension_data_included: matches!(byte & 0x80, 0x80),
-        };
-        Ok(flags)
+        }
     }
 
-    pub fn as_u8(&self) -> u8 {
+    #[must_use]
+    pub const fn as_u8(&self) -> u8 {
         let mut ret = 0x0;
         if self.user_present_result {
             ret |= 0x01;

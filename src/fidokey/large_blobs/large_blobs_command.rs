@@ -15,20 +15,17 @@ pub fn create_payload(
 
     // 0x01: get
     if let Some(read_bytes) = get {
-        map.insert(Value::Integer(0x01), Value::Integer(read_bytes as i128));
+        map.insert(Value::Integer(0x01), Value::Integer(i128::from(read_bytes)));
     }
 
     // 0x03: offset
-    map.insert(Value::Integer(0x03), Value::Integer(offset as i128));
+    map.insert(Value::Integer(0x03), Value::Integer(i128::from(offset)));
 
-    if let Some(write_datas) = set {
-        let large_blob_array = create_large_blob_array(write_datas)?;
+    if let Some(write_data) = set {
+        let large_blob_array = create_large_blob_array(&write_data);
 
         // 0x02: set
-        map.insert(
-            Value::Integer(0x02),
-            Value::Bytes(large_blob_array.to_vec()),
-        );
+        map.insert(Value::Integer(0x02), Value::Bytes(large_blob_array.clone()));
 
         // 0x04: length
         map.insert(
@@ -76,19 +73,18 @@ pub fn create_payload(
     Ok(payload)
 }
 
-fn create_large_blob_array(write_datas: Vec<u8>) -> Result<Vec<u8>> {
-    let data = write_datas.to_vec();
+fn create_large_blob_array(write_data: &[u8]) -> Vec<u8> {
+    let mut large_blob_array = write_data.to_vec();
 
-    let hash = digest::digest(&digest::SHA256, &data);
+    let hash = digest::digest(&digest::SHA256, &large_blob_array);
     let message = &hash.as_ref()[0..16];
 
     //println!("- data: {:?}", util::to_hex_str(&data));
     //println!("- message: {:?}", util::to_hex_str(message));
 
-    let mut large_blob_array = data.to_vec();
     large_blob_array.append(&mut message.to_vec());
 
     //println!("- large_blob_array: {:?}", util::to_hex_str(&large_blob_array));
 
-    Ok(large_blob_array)
+    large_blob_array
 }

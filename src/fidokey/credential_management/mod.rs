@@ -13,32 +13,32 @@ use {
 };
 
 impl FidoKeyHid {
-    /// CredentialManagement - getCredsMetadata (CTAP 2.1-PRE)
+    /// `CredentialManagement` - `getCredsMetadata` (CTAP 2.1-PRE)
     pub fn credential_management_get_creds_metadata(
         &self,
         pin: Option<&str>,
     ) -> Result<CredentialsCount> {
-        let meta = self.credential_management(pin, SubCommand::GetCredsMetadata)?;
+        let meta = self.credential_management(pin, &SubCommand::GetCredsMetadata)?;
         Ok(CredentialsCount::new(&meta))
     }
 
-    /// CredentialManagement - enumerateRPsBegin & enumerateRPsNext (CTAP 2.1-PRE)
+    /// `CredentialManagement` - `enumerateRPsBegin` & `enumerateRPsNext` (CTAP 2.1-PRE)
     pub fn credential_management_enumerate_rps(&self, pin: Option<&str>) -> Result<Vec<Rp>> {
         let mut datas: Vec<Rp> = Vec::new();
-        let data = self.credential_management(pin, SubCommand::EnumerateRPsBegin)?;
+        let data = self.credential_management(pin, &SubCommand::EnumerateRPsBegin)?;
 
         if data.total_rps > 0 {
             datas.push(Rp::new(&data));
             let roop_n = data.total_rps - 1;
             for _ in 0..roop_n {
-                let data = self.credential_management(pin, SubCommand::EnumerateRPsGetNextRp)?;
+                let data = self.credential_management(pin, &SubCommand::EnumerateRPsGetNextRp)?;
                 datas.push(Rp::new(&data));
             }
         }
         Ok(datas)
     }
 
-    /// CredentialManagement - enumerateCredentialsBegin & enumerateCredentialsNext (CTAP 2.1-PRE)
+    /// `CredentialManagement` - `enumerateCredentialsBegin` & `enumerateCredentialsNext` (CTAP 2.1-PRE)
     pub fn credential_management_enumerate_credentials(
         &self,
         pin: Option<&str>,
@@ -48,7 +48,7 @@ impl FidoKeyHid {
 
         let data = self.credential_management(
             pin,
-            SubCommand::EnumerateCredentialsBegin(rpid_hash.to_vec()),
+            &SubCommand::EnumerateCredentialsBegin(rpid_hash.to_vec()),
         )?;
 
         datas.push(Credential::new(&data));
@@ -57,7 +57,7 @@ impl FidoKeyHid {
             for _ in 0..roop_n {
                 let data = self.credential_management(
                     pin,
-                    SubCommand::EnumerateCredentialsGetNextCredential(rpid_hash.to_vec()),
+                    &SubCommand::EnumerateCredentialsGetNextCredential(rpid_hash.to_vec()),
                 )?;
                 datas.push(Credential::new(&data));
             }
@@ -65,31 +65,31 @@ impl FidoKeyHid {
         Ok(datas)
     }
 
-    /// CredentialManagement - deleteCredential (CTAP 2.1-PRE)
+    /// `CredentialManagement` - deleteCredential (CTAP 2.1-PRE)
     pub fn credential_management_delete_credential(
         &self,
         pin: Option<&str>,
         pkcd: PublicKeyCredentialDescriptor,
     ) -> Result<()> {
-        self.credential_management(pin, SubCommand::DeleteCredential(pkcd))?;
+        self.credential_management(pin, &SubCommand::DeleteCredential(pkcd))?;
         Ok(())
     }
 
-    /// CredentialManagement - updateUserInformation (CTAP 2.1-PRE)
+    /// `CredentialManagement` - `updateUserInformation` (CTAP 2.1-PRE)
     pub fn credential_management_update_user_information(
         &self,
         pin: Option<&str>,
         pkcd: PublicKeyCredentialDescriptor,
         pkcue: PublicKeyCredentialUserEntity,
     ) -> Result<()> {
-        self.credential_management(pin, SubCommand::UpdateUserInformation(pkcd, pkcue))?;
+        self.credential_management(pin, &SubCommand::UpdateUserInformation(pkcd, pkcue))?;
         Ok(())
     }
 
     fn credential_management(
         &self,
         pin: Option<&str>,
-        sub_command: SubCommand,
+        sub_command: &SubCommand,
     ) -> Result<CredentialManagementData> {
         let cid = ctaphid::ctaphid_init(self)?;
 

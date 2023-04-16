@@ -3,7 +3,7 @@ pub struct PinToken {
 }
 
 impl PinToken {
-    pub fn new(data: &[u8]) -> PinToken {
-        PinToken { key: data.to_vec() }
+    pub fn new(data: &[u8]) -> Self {
+        Self { key: data.to_vec() }
     }
 }

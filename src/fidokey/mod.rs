@@ -42,7 +42,7 @@ impl FidoKeyHid {
             }
 
             if let Ok(dev) = api.open_path(&path.unwrap()) {
-                let result = FidoKeyHid {
+                let result = Self {
                     device_internal: dev,
                     enable_log: cfg.enable_log,
                     use_pre_bio_enrollment: cfg.use_pre_bio_enrollment,
@@ -56,22 +56,21 @@ impl FidoKeyHid {
     }
 
     pub(crate) fn write(&self, cmd: &[u8]) -> Result<usize, String> {
-        match self.device_internal.write(cmd) {
-            Ok(size) => Ok(size),
-            Err(_) => Err("write error".into()),
-        }
+        self.device_internal
+            .write(cmd)
+            .map_err(|_| "write error".into())
     }
 
     pub(crate) fn read(&self) -> Result<Vec<u8>, String> {
         let mut buf: Vec<u8> = vec![0; 64];
-        match self.device_internal.read(&mut buf[..]) {
-            Ok(_) => Ok(buf),
-            Err(_) => Err("read error".into()),
-        }
+        self.device_internal
+            .read(&mut buf[..])
+            .map(|_| buf)
+            .map_err(|_| "read error".into())
     }
 }
 
-/// Abstraction for getting a path from a provided HidParam
+/// Abstraction for getting a path from a provided `HidParam`
 fn get_path(api: &hidapi::HidApi, param: &crate::HidParam) -> Option<CString> {
     match param {
         HidParam::Path(s) => {

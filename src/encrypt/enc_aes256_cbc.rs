@@ -25,7 +25,7 @@ pub fn encrypt_message(key: &[u8; 32], message: &[u8]) -> Vec<u8> {
 #[allow(dead_code)]
 pub fn decrypt_message_str(key: &[u8; 32], message: &[u8]) -> String {
     let bytes = decrypt_message(key, message);
-    String::from_utf8(bytes.to_vec()).unwrap()
+    String::from_utf8(bytes).unwrap()
 }
 
 pub fn decrypt_message(key: &[u8; 32], message: &[u8]) -> Vec<u8> {

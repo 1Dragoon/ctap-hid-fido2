@@ -8,22 +8,19 @@ use fidokey::MakeCredentialArgsBuilder;
 
 #[test]
 fn test_get_hid_devices() {
-    get_hid_devices();
-    assert!(true);
+    let _ = get_hid_devices();
 }
 
 #[test]
 fn test_wink() {
     let device = FidoKeyHidFactory::create(&Cfg::init()).unwrap();
     device.wink().unwrap();
-    assert!(true);
 }
 
 #[test]
 fn test_get_info() {
     let device = FidoKeyHidFactory::create(&Cfg::init()).unwrap();
     device.get_info().unwrap();
-    assert!(true);
 }
 
 #[test]
@@ -36,11 +33,10 @@ fn test_get_info_u2f() {
                 return;
             }
         }
-        Err(_) => assert!(false),
+        Err(_) => panic!(),
     };
 
     device.get_info_u2f().unwrap();
-    assert!(true);
 }
 
 #[test]
@@ -48,7 +44,6 @@ fn test_client_pin_get_retries() {
     let device = FidoKeyHidFactory::create(&Cfg::init()).unwrap();
     let retry = device.get_pin_retries();
     println!("- retries = {:?}", retry);
-    assert!(true);
 }
 
 #[test]
@@ -68,8 +63,6 @@ fn test_make_credential_with_pin_non_rk() {
         .unwrap();
     println!("Assertion");
     println!("{}", ass);
-
-    assert!(true);
 }
 
 #[test]
@@ -81,7 +74,7 @@ fn test_make_credential_with_pin_non_rk_exclude_authenticator() {
 
     let device = FidoKeyHidFactory::create(&Cfg::init()).unwrap();
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
         .build();
 
@@ -92,7 +85,7 @@ fn test_make_credential_with_pin_non_rk_exclude_authenticator() {
     let verify_result = verifier::verify_attestation(rpid, &challenge, &att);
     assert!(verify_result.is_success);
 
-    let make_credential_args = MakeCredentialArgsBuilder::new(&rpid, &challenge)
+    let make_credential_args = MakeCredentialArgsBuilder::new(rpid, &challenge)
         .pin(pin)
         .exclude_authenticator(&verify_result.credential_id)
         .build();
@@ -111,14 +104,13 @@ fn test_credential_management_get_creds_metadata() {
                 return;
             }
         }
-        Err(_) => assert!(false),
+        Err(_) => panic!(),
     };
 
     let pin = "1234";
-    match device.credential_management_get_creds_metadata(Some(pin)) {
-        Ok(_) => assert!(true),
-        Err(_) => assert!(false),
-    };
+    assert!(device
+        .credential_management_get_creds_metadata(Some(pin))
+        .is_ok());
 }
 
 #[test]
@@ -131,14 +123,13 @@ fn test_credential_management_enumerate_rps() {
                 return;
             }
         }
-        Err(_) => assert!(false),
+        Err(_) => panic!(),
     };
 
     let pin = "1234";
-    match device.credential_management_enumerate_rps(Some(pin)) {
-        Ok(_) => assert!(true),
-        Err(_) => assert!(false),
-    };
+    assert!(device
+        .credential_management_enumerate_rps(Some(pin))
+        .is_ok());
 }
 
 #[test]
@@ -157,7 +148,7 @@ fn test_bio_enrollment_get_fingerprint_sensor_info() {
                 };
             }
         }
-        Err(_) => assert!(false),
+        Err(_) => panic!(),
     };
 
     // skip
@@ -165,10 +156,7 @@ fn test_bio_enrollment_get_fingerprint_sensor_info() {
         return;
     };
 
-    match device.bio_enrollment_get_fingerprint_sensor_info() {
-        Ok(_) => assert!(true),
-        Err(_) => assert!(false),
-    };
+    assert!(device.bio_enrollment_get_fingerprint_sensor_info().is_ok());
 }
 
 #[test]
@@ -185,7 +173,7 @@ fn test_bio_enrollment_enumerate_enrollments() {
                 };
             }
         }
-        Err(_) => assert!(false),
+        Err(_) => panic!(),
     };
 
     if skip {
@@ -193,8 +181,5 @@ fn test_bio_enrollment_enumerate_enrollments() {
     };
 
     let pin = "1234";
-    match device.bio_enrollment_enumerate_enrollments(pin) {
-        Ok(_) => assert!(true),
-        Err(_) => assert!(false),
-    };
+    assert!(device.bio_enrollment_enumerate_enrollments(pin).is_ok());
 }

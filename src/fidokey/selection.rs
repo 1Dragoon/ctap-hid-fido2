@@ -13,6 +13,6 @@ impl FidoKeyHid {
         let cid = ctaphid::ctaphid_init(self)?;
         let send_payload = create_payload();
         let _response_cbor = ctaphid::ctaphid_cbor(self, &cid, &send_payload)?;
-        Ok("".to_string())
+        Ok(String::new())
     }
 }

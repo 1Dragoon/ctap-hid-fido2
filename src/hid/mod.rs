@@ -22,7 +22,7 @@ pub enum HidParam {
 }
 
 /// Struct that contains information about found HID devices. Also
-/// contains a HidParam which can be used to lookup the device
+/// contains a `HidParam` which can be used to lookup the device
 /// later.
 #[derive(Clone)]
 pub struct HidInfo {
@@ -41,47 +41,49 @@ pub struct HidInfo {
 
 impl HidParam {
     /// Generate HID parameters for FIDO key devices
-    pub fn get() -> Vec<HidParam> {
+    #[must_use]
+    pub fn get() -> Vec<Self> {
         vec![
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x1050,
                 pid: 0x0402,
             }, // Yubikey 4/5 U2F
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x1050,
                 pid: 0x0407,
             }, // Yubikey 4/5 OTP+U2F+CCID
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x1050,
                 pid: 0x0120,
             }, // Yubikey Touch U2F
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x096E,
                 pid: 0x085D,
             }, // Biopass
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x096E,
                 pid: 0x0866,
             }, // All in pass
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x0483,
                 pid: 0xA2CA,
             }, // Solokey
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x096E,
                 pid: 0x0858,
             }, // ePass FIDO(A4B)
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x20a0,
                 pid: 0x42b1,
             }, // Nitrokey FIDO2 2.0.0
-            HidParam::VidPid {
+            Self::VidPid {
                 vid: 0x32a3,
                 pid: 0x3201,
             }, // Idem Key
         ]
     }
-    pub fn auto() -> Vec<HidParam> {
+    #[must_use]
+    pub const fn auto() -> Vec<Self> {
         vec![]
     }
 }
@@ -92,7 +94,10 @@ pub fn get_hid_devices(usage_page: Option<u16>) -> Vec<HidInfo> {
 
     let devices = api.device_list();
     for dev in devices {
-        if usage_page == None || dev.usage_page() == usage_page.unwrap() {
+        if usage_page
+            .map(|u| u == dev.usage_page())
+            .unwrap_or_default()
+        {
             let mut memo = StrBuf::new(0);
 
             if let Some(n) = dev.product_string() {
@@ -112,13 +117,13 @@ pub fn get_hid_devices(usage_page: Option<u16>) -> Vec<HidInfo> {
 
             memo.add(format!(" path={:?}", dev.path()).as_str());
 
-            let param = match dev.path().to_str() {
-                Ok(s) => HidParam::Path(s.to_string()),
-                _ => HidParam::VidPid {
+            let param = dev.path().to_str().map_or_else(
+                |_| HidParam::VidPid {
                     vid: dev.vendor_id(),
                     pid: dev.product_id(),
                 },
-            };
+                |s| HidParam::Path(s.to_string()),
+            );
 
             res.push(HidInfo {
                 pid: dev.product_id(),

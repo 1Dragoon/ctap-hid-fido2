@@ -5,18 +5,14 @@ use ring::digest;
 use serde_cbor::Value;
 use std::collections::BTreeMap;
 
+#[must_use]
 pub fn to_hex_str(bytes: &[u8]) -> String {
-    bytes
-        .iter()
-        .map(|n| format!("{:02X}", n))
-        .collect::<String>()
+    bytes.iter().map(|n| format!("{n:02X}")).collect::<String>()
 }
 
+#[must_use]
 pub fn to_str_hex(hexstr: &str) -> Vec<u8> {
-    match hex::decode(hexstr) {
-        Ok(val) => val,
-        Err(_) => vec![],
-    }
+    hex::decode(hexstr).unwrap_or_default()
 }
 
 pub fn print_typename<T>(_: T) {
@@ -46,7 +42,7 @@ pub(crate) fn cbor_get_string_from_map(cbor_map: &Value, get_key: &str) -> Resul
                 }
             }
         }
-        Ok("".to_string())
+        Ok(String::new())
     } else {
         Err(anyhow!("Cast Error : Value is not a Map."))
     }
@@ -73,7 +69,7 @@ pub(crate) fn cbor_get_bytes_from_map(cbor_map: &Value, get_key: &str) -> Result
 
 pub(crate) fn cbor_value_to_num<T: NumCast>(value: &Value) -> Result<T> {
     if let Value::Integer(x) = value {
-        Ok(NumCast::from(*x).ok_or(anyhow!("err"))?)
+        Ok(NumCast::from(*x).ok_or_else(|| anyhow!("err"))?)
     } else {
         Err(anyhow!("Cast Error : Value is not a Integer."))
     }
@@ -82,7 +78,7 @@ pub(crate) fn cbor_value_to_num<T: NumCast>(value: &Value) -> Result<T> {
 #[allow(dead_code)]
 pub(crate) fn cbor_value_to_vec_u8(value: &Value) -> Result<Vec<u8>> {
     if let Value::Bytes(xs) = value {
-        Ok(xs.to_vec())
+        Ok(xs.clone())
     } else {
         Err(anyhow!("Cast Error : Value is not a Bytes."))
     }
@@ -125,7 +121,7 @@ pub(crate) fn cbor_value_to_vec_bytes(value: &Value) -> Result<Vec<Vec<u8>>> {
         let mut bytes = [].to_vec();
         for x in xs {
             if let Value::Bytes(b) = x {
-                bytes.push(b.to_vec());
+                bytes.push(b.clone());
             }
         }
         Ok(bytes)
@@ -138,16 +134,16 @@ pub(crate) fn cbor_bytes_to_map(bytes: &[u8]) -> Result<BTreeMap<Value, Value>> 
     if bytes.is_empty() {
         return Ok(BTreeMap::new());
     }
-    match serde_cbor::from_slice(bytes) {
-        Ok(cbor) => {
+    serde_cbor::from_slice(bytes).map_or_else(
+        |_| Err(anyhow!("parse error 1")),
+        |cbor| {
             if let Value::Map(n) = cbor {
                 Ok(n)
             } else {
                 Err(anyhow!("parse error 2"))
             }
-        }
-        Err(_) => Err(anyhow!("parse error 1")),
-    }
+        },
+    )
 }
 
 #[allow(dead_code)]
@@ -162,9 +158,9 @@ pub(crate) fn cbor_value_print(value: &Value) {
     };
 }
 
-pub(crate) fn create_clientdata_hash(challenge: Vec<u8>) -> Vec<u8> {
+pub(crate) fn create_clientdata_hash(challenge: &[u8]) -> Vec<u8> {
     // sha256
-    let hasher = digest::digest(&digest::SHA256, &challenge);
+    let hasher = digest::digest(&digest::SHA256, challenge);
     hasher.as_ref().to_vec()
 }
 
@@ -173,12 +169,13 @@ pub(crate) fn convert_to_publickey_pem(public_key_der: &[u8]) -> String {
     let mut tmp = vec![];
 
     if public_key_der.is_empty() {
-        return "".to_string();
+        return String::new();
     }
 
     // 0.metadata(26byte)
-    let meta_header = hex::decode("3059301306072a8648ce3d020106082a8648ce3d030107034200").unwrap();
-    tmp.append(&mut meta_header.to_vec());
+    let mut meta_header =
+        hex::decode("3059301306072a8648ce3d020106082a8648ce3d030107034200").unwrap();
+    tmp.append(&mut meta_header);
 
     tmp.append(&mut public_key_der.to_vec());
 
@@ -187,12 +184,12 @@ pub(crate) fn convert_to_publickey_pem(public_key_der: &[u8]) -> String {
 
     // 2. /n　every 64 characters
     let pem_base = {
-        let mut pem_base = "".to_string();
+        let mut pem_base = String::new();
         let mut counter = 0;
         for c in base64_str.chars() {
-            pem_base = pem_base + &c.to_string();
+            pem_base.push(c);
             if counter == 64 - 1 {
-                pem_base += "\n";
+                pem_base.push('\n');
                 counter = 0;
             } else {
                 counter += 1;

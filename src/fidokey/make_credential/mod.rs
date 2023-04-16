@@ -20,23 +20,21 @@ impl FidoKeyHid {
         let cid = ctaphid::ctaphid_init(self)?;
 
         let user_id = {
-            if let Some(rkp) = &args.user_entity {
-                rkp.id.to_vec()
-            } else {
-                [].to_vec()
-            }
+            args.user_entity
+                .as_ref()
+                .map_or_else(|| [].to_vec(), |rkp| rkp.id.clone())
         };
 
         // create cmmand
         let send_payload = {
             let mut params =
-                make_credential_command::Params::new(&args.rpid, args.challenge.to_vec(), user_id);
+                make_credential_command::Params::new(&args.rpid, &args.challenge, &user_id);
 
             params.option_rk = args.rk.unwrap_or(false);
 
             params.option_uv = args.uv;
 
-            params.exclude_list = args.exclude_list.to_vec();
+            params.exclude_list = args.exclude_list.clone();
             params.key_type = args
                 .key_type
                 .unwrap_or(CredentialSupportedKeyType::Ecdsa256);
@@ -164,8 +162,7 @@ mod tests {
 
         // create cmmand
         let send_payload = {
-            let mut params =
-                make_credential_command::Params::new(rpid, challenge.to_vec(), [].to_vec());
+            let mut params = make_credential_command::Params::new(rpid, &challenge, &[]);
             params.option_rk = false; // non rk
                                       //params.option_uv = true;
 
@@ -175,7 +172,7 @@ mod tests {
                 crate::util::to_hex_str(&params.client_data_hash)
             );
 
-            params.pin_auth = pin_auth.to_vec();
+            params.pin_auth = pin_auth;
 
             make_credential_command::create_payload(params, None)
         };

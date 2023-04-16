@@ -17,8 +17,9 @@ pub struct Params {
 }
 
 impl Params {
-    pub fn new(rp_id: &str, challenge: Vec<u8>, credential_ids: Vec<Vec<u8>>) -> Params {
-        Params {
+    #[must_use]
+    pub fn new(rp_id: &str, challenge: &[u8], credential_ids: Vec<Vec<u8>>) -> Self {
+        Self {
             rp_id: rp_id.to_string(),
             client_data_hash: util::create_clientdata_hash(challenge),
             allowlist_credential_ids: credential_ids,
@@ -27,6 +28,7 @@ impl Params {
     }
 }
 
+#[must_use]
 pub fn create_payload(
     params: Params,
     extensions: Option<&Vec<Extension>>,
@@ -40,7 +42,9 @@ pub fn create_payload(
 
     // 0x03 : allowList
     let allow_list = {
-        if !params.allowlist_credential_ids.is_empty() {
+        if params.allowlist_credential_ids.is_empty() {
+            None
+        } else {
             let allow_list = Value::Array(
                 params
                     .allowlist_credential_ids
@@ -59,8 +63,6 @@ pub fn create_payload(
                     .collect(),
             );
             Some(allow_list)
-        } else {
-            None
         }
     };
 
@@ -116,10 +118,10 @@ pub fn create_payload(
 
     // pinAuth(0x06)
     let pin_auth = {
-        if !params.pin_auth.is_empty() {
-            Some(Value::Bytes(params.pin_auth))
-        } else {
+        if params.pin_auth.is_empty() {
             None
+        } else {
+            Some(Value::Bytes(params.pin_auth))
         }
     };
 

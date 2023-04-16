@@ -11,21 +11,21 @@ pub use bio_enrollment_params::*;
 use bio_enrollment_params::{BioEnrollmentData, TemplateInfo};
 
 impl FidoKeyHid {
-    /// BioEnrollment - getFingerprintSensorInfo (CTAP 2.1-PRE)
+    /// `BioEnrollment` - `getFingerprintSensorInfo` (CTAP 2.1-PRE)
     pub fn bio_enrollment_get_fingerprint_sensor_info(&self) -> Result<BioSensorInfo> {
         let init = self.bio_enrollment_init(None)?;
 
         // 6.7.2. Get bio modality
-        let data1 = self.bio_enrollment(&init.0, None, None)?;
+        let data1 = self.bio_enrollment(init.0, None, None)?;
         if self.enable_log {
-            println!("{}", data1);
+            println!("{data1}");
         }
 
         // 6.7.3. Get fingerprint sensor info
-        let data2 = self.bio_enrollment(&init.0, None, Some(BioCmd::GetFingerprintSensorInfo))?;
+        let data2 = self.bio_enrollment(init.0, None, Some(BioCmd::GetFingerprintSensorInfo))?;
 
         if self.enable_log {
-            println!("{}", data2);
+            println!("{data2}");
         }
 
         Ok(BioSensorInfo {
@@ -36,7 +36,7 @@ impl FidoKeyHid {
         })
     }
 
-    /// BioEnrollment - EnrollBegin
+    /// `BioEnrollment` - `EnrollBegin`
     pub fn bio_enrollment_begin(
         &self,
         pin: &str,
@@ -45,19 +45,19 @@ impl FidoKeyHid {
         let init = self.bio_enrollment_init(Some(pin))?;
 
         let data = self.bio_enrollment(
-            &init.0,
+            init.0,
             init.1.as_ref(),
             Some(BioCmd::EnrollBegin(timeout_milliseconds)),
         )?;
 
         if self.enable_log {
-            println!("{}", data);
+            println!("{data}");
         }
 
         let result1 = EnrollStatus1 {
             cid: init.0,
             pin_token: init.1,
-            template_id: data.template_id.to_vec(),
+            template_id: data.template_id.clone(),
         };
 
         let finish = data.last_enroll_sample_status == 0x00 && data.remaining_samples == 0;
@@ -72,7 +72,7 @@ impl FidoKeyHid {
         Ok((result1, result2))
     }
 
-    /// BioEnrollment - CaptureNext
+    /// `BioEnrollment` - `CaptureNext`
     pub fn bio_enrollment_next(
         &self,
         enroll_status: &EnrollStatus1,
@@ -80,7 +80,7 @@ impl FidoKeyHid {
     ) -> Result<EnrollStatus2> {
         let template_info = TemplateInfo::new(&enroll_status.template_id, None);
         let data = self.bio_enrollment(
-            &enroll_status.cid,
+            enroll_status.cid,
             enroll_status.pin_token.as_ref(),
             Some(BioCmd::EnrollCaptureNextSample(
                 template_info,
@@ -89,7 +89,7 @@ impl FidoKeyHid {
         )?;
 
         if self.enable_log {
-            println!("{}", data);
+            println!("{data}");
         }
 
         let finish = data.last_enroll_sample_status == 0x00 && data.remaining_samples == 0;
@@ -104,42 +104,39 @@ impl FidoKeyHid {
         Ok(result)
     }
 
-    /// BioEnrollment - Cancel current enrollment
+    /// `BioEnrollment` - Cancel current enrollment
     pub fn bio_enrollment_cancel(&self, enroll_status: &EnrollStatus1) -> Result<()> {
         let data = self.bio_enrollment(
-            &enroll_status.cid,
+            enroll_status.cid,
             enroll_status.pin_token.as_ref(),
             Some(BioCmd::CancelCurrentEnrollment),
         )?;
 
         if self.enable_log {
-            println!("{}", data);
+            println!("{data}");
         }
 
         Ok(())
     }
 
-    /// BioEnrollment - enumerateEnrollments (CTAP 2.1-PRE)
+    /// `BioEnrollment` - enumerateEnrollments (CTAP 2.1-PRE)
     /// 6.7.6. Enumerate enrollments
     pub fn bio_enrollment_enumerate_enrollments(&self, pin: &str) -> Result<Vec<TemplateInfo>> {
         let init = self.bio_enrollment_init(Some(pin))?;
         let pin_token = init.1.unwrap();
 
-        let data = self.bio_enrollment(
-            &init.0,
-            Some(&pin_token),
-            Some(BioCmd::EnumerateEnrollments),
-        )?;
+        let data =
+            self.bio_enrollment(init.0, Some(&pin_token), Some(BioCmd::EnumerateEnrollments))?;
 
         if self.enable_log {
-            println!("{}", data);
+            println!("{data}");
         }
 
         Ok(data.template_infos)
     }
 
-    /// BioEnrollment - Rename/Set FriendlyName
-    /// 6.7.7. Rename/Set FriendlyName
+    /// `BioEnrollment` - Rename/Set `FriendlyName`
+    /// 6.7.7. Rename/Set `FriendlyName`
     pub fn bio_enrollment_set_friendly_name(
         &self,
         pin: &str,
@@ -152,13 +149,13 @@ impl FidoKeyHid {
         let pin_token = init.1.unwrap();
 
         let data = self.bio_enrollment(
-            &init.0,
+            init.0,
             Some(&pin_token),
             Some(BioCmd::SetFriendlyName(template_info)),
         )?;
 
         if self.enable_log {
-            println!("{}", data);
+            println!("{data}");
         }
 
         Ok(())
@@ -171,13 +168,13 @@ impl FidoKeyHid {
 
         let template_info = TemplateInfo::new(template_id, None);
         let data = self.bio_enrollment(
-            &init.0,
+            init.0,
             Some(&pin_token),
             Some(BioCmd::RemoveEnrollment(template_info)),
         )?;
 
         if self.enable_log {
-            println!("{}", data);
+            println!("{data}");
         }
 
         Ok(())
@@ -185,7 +182,7 @@ impl FidoKeyHid {
 
     fn bio_enrollment(
         &self,
-        cid: &[u8; 4],
+        cid: [u8; 4],
         pin_token: Option<&PinToken>,
         sub_command: Option<bio_enrollment_command::SubCommand>,
     ) -> Result<BioEnrollmentData> {
@@ -199,7 +196,7 @@ impl FidoKeyHid {
             println!("send(cbor) = {}", util::to_hex_str(&send_payload));
         }
 
-        let response_cbor = ctaphid::ctaphid_cbor(self, cid, &send_payload)?;
+        let response_cbor = ctaphid::ctaphid_cbor(self, &cid, &send_payload)?;
         if self.enable_log {
             println!("response(cbor) = {}", util::to_hex_str(&response_cbor));
         }

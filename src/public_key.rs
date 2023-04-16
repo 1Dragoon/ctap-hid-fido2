@@ -9,10 +9,11 @@ pub struct PublicKey {
     pub der: Vec<u8>,
 }
 impl PublicKey {
+    #[must_use]
     pub fn new(cbor: &Value) -> Self {
         let cose_key = CoseKey::new(cbor).unwrap();
 
-        let mut cose_public_key = PublicKey::default();
+        let mut cose_public_key = Self::default();
         cose_public_key.der = cose_key.to_public_key_der();
         cose_public_key.pem = util::convert_to_publickey_pem(&cose_public_key.der);
         cose_public_key

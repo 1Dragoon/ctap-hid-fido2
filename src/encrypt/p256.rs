@@ -22,7 +22,7 @@ impl P256Key {
             if *curve != 1 {
                 return Err(anyhow!("Err KeyType"));
             }
-            let mut key = P256Key::default();
+            let mut key = Self::default();
             key.x.copy_from_slice(x);
             key.y.copy_from_slice(y);
             return Ok(key);
@@ -34,7 +34,7 @@ impl P256Key {
         if bytes.len() != 65 || bytes[0] != 0x04 {
             return Err(anyhow!("FidoErrorKind::CborDecode"));
         }
-        let mut res = P256Key::default();
+        let mut res = Self::default();
         res.x.copy_from_slice(&bytes[1..33]);
         res.y.copy_from_slice(&bytes[33..65]);
         Ok(res)

@@ -6,7 +6,7 @@ use serde_cbor::{to_vec, Value};
 use std::collections::BTreeMap;
 use strum_macros::EnumProperty;
 
-#[derive(Debug, Clone, PartialEq, EnumProperty)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumProperty)]
 pub enum SubCommand {
     #[strum(props(SubCommandId = "2"))]
     ToggleAlwaysUv,
@@ -21,21 +21,19 @@ impl SubCommandBase for SubCommand {
     fn has_param(&self) -> bool {
         matches!(
             self,
-            SubCommand::SetMinPinLength(_)
-                | SubCommand::SetMinPinLengthRpIds(_)
-                | SubCommand::ForceChangePin
+            Self::SetMinPinLength(_) | Self::SetMinPinLengthRpIds(_) | Self::ForceChangePin
         )
     }
 }
 
-pub fn create_payload(pin_token: pintoken::PinToken, sub_command: SubCommand) -> Result<Vec<u8>> {
+pub fn create_payload(pin_token: &pintoken::PinToken, sub_command: &SubCommand) -> Result<Vec<u8>> {
     // create cbor
     let mut map = BTreeMap::new();
 
     // 0x01: subCommand
     map.insert(
         Value::Integer(0x01),
-        Value::Integer(sub_command.id()? as i128),
+        Value::Integer(i128::from(sub_command.id()?)),
     );
 
     // subCommandParams (0x02): Map containing following parameters
@@ -46,7 +44,7 @@ pub fn create_payload(pin_token: pintoken::PinToken, sub_command: SubCommand) ->
                 // 0x01:newMinPINLength
                 Some(BTreeMap::from([(
                     Value::Integer(0x01),
-                    Value::Integer(new_min_pin_length as i128),
+                    Value::Integer(i128::from(new_min_pin_length)),
                 )]))
             }
             SubCommand::SetMinPinLengthRpIds(rpids) => {
@@ -60,7 +58,7 @@ pub fn create_payload(pin_token: pintoken::PinToken, sub_command: SubCommand) ->
                 // 0x03:ForceChangePin
                 Some(BTreeMap::from([(Value::Integer(0x03), Value::Bool(true))]))
             }
-            _ => (None),
+            SubCommand::ToggleAlwaysUv => None,
         };
         if let Some(param) = param {
             map.insert(Value::Integer(0x02), Value::Map(param.clone()));
@@ -84,10 +82,7 @@ pub fn create_payload(pin_token: pintoken::PinToken, sub_command: SubCommand) ->
         let sig = enc_hmac_sha_256::authenticate(&pin_token.key, &message);
         sig[0..16].to_vec()
     };
-    map.insert(
-        Value::Integer(0x04),
-        Value::Bytes(pin_uv_auth_param.to_vec()),
-    );
+    map.insert(Value::Integer(0x04), Value::Bytes(pin_uv_auth_param));
 
     // CBOR
     let cbor = Value::Map(map);

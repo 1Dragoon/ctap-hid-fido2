@@ -5,7 +5,7 @@ mod get_info_response;
 use super::FidoKeyHid;
 use anyhow::{anyhow, Result};
 
-#[derive(Debug, Clone, PartialEq, strum_macros::AsRefStr)]
+#[derive(Debug, Clone, PartialEq, Eq, strum_macros::AsRefStr)]
 pub enum InfoOption {
     #[strum(serialize = "alwaysUv")]
     AlwaysUv,
@@ -49,7 +49,7 @@ pub enum InfoOption {
     UvToken,
 }
 
-#[derive(Debug, Clone, PartialEq, strum_macros::AsRefStr)]
+#[derive(Debug, Clone, PartialEq, Eq, strum_macros::AsRefStr)]
 pub enum InfoParam {
     #[strum(serialize = "U2F_V2")]
     VersionsU2Fv2,
@@ -83,10 +83,8 @@ impl FidoKeyHid {
     pub fn get_info_u2f(&self) -> Result<String> {
         let cid = ctaphid::ctaphid_init(self)?;
 
-        let _data: Vec<u8> = Vec::new();
-
         // CTAP1_INS.Version = 3
-        match ctaphid::send_apdu(self, &cid, 0, 3, 0, 0, &_data) {
+        match ctaphid::send_apdu(self, &cid, 0, 3, 0, 0, None) {
             Ok(result) => {
                 let version: String = String::from_utf8(result).unwrap();
                 Ok(version)
@@ -110,7 +108,7 @@ impl FidoKeyHid {
 
     pub fn enable_info_option(&self, info_option: &InfoOption) -> Result<Option<bool>> {
         let info = self.get_info()?;
-        let ret = info.options.iter().find(|v| (*v).0 == info_option.as_ref());
+        let ret = info.options.iter().find(|v| v.0 == info_option.as_ref());
         if let Some(v) = ret {
             // v.1 == true or false
             // - present and set to true.

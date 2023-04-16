@@ -20,7 +20,7 @@ pub const AUTHENTICATOR_SELECTION: u8 = 0x0B;
 pub const AUTHENTICATOR_LARGEBLOBS: u8 = 0x0C;
 pub const AUTHENTICATOR_CONFIG: u8 = 0x0D;
 
-pub(crate) fn get_u2f_status_message(status: u8) -> String {
+pub fn get_u2f_status_message(status: u8) -> String {
     match status {
         0x90 => "SW_NO_ERROR (0x9000): The command completed successfully without error.".to_string(),
         0x69 => "SW_CONDITIONS_NOT_SATISFIED (0x6985): The request was rejected due to test-of-user-presence being required.".to_string(),
@@ -28,12 +28,12 @@ pub(crate) fn get_u2f_status_message(status: u8) -> String {
         0x67 => "SW_WRONG_LENGTH (0x6700): The length of the request was invalid.".to_string(),
         0x6E => "SW_CLA_NOT_SUPPORTED (0x6E00): The Class byte of the request is not supported.".to_string(),
         0x6D => "SW_INS_NOT_SUPPORTED (0x6D00): The Instruction of the request is not supported.".to_string(),
-        _ => format!("0x{:X}", status),
+        _ => format!("0x{status:X}"),
     }
 }
 
 #[allow(dead_code)]
-pub(crate) fn get_ctap_status_message(status: u8) -> String {
+pub fn get_ctap_status_message(status: u8) -> String {
     match status {
         0x00 => "0x00 CTAP1_ERR_SUCCESS Indicates successful response.".to_string(),
         0x01 => "0x01 CTAP1_ERR_INVALID_COMMAND The command is not a valid CTAP command.".to_string(),
@@ -92,11 +92,11 @@ pub(crate) fn get_ctap_status_message(status: u8) -> String {
         0xff => "0xFF CTAP2_ERR_VENDOR_LAST   Vendor specific error.".to_string(),
         // CTAP仕様にない、謎のステータス
         0x6A => "0x6A BioPass UnKnown Error.".to_string(),
-        _ => format!("0x{:X}", status),
+        _ => format!("0x{status:02X}"),
     }
 }
 
-pub(crate) fn get_ctap_last_enroll_sample_status_message(status: u8) -> String {
+pub fn get_ctap_last_enroll_sample_status_message(status: u8) -> String {
     match status {
         0x00 => "Good fingerprint capture. 0x00: CTAP2_ENROLL_FEEDBACK_FP_GOOD".to_string(),
         0x01 => "Fingerprint was too high.".to_string(),
@@ -113,6 +113,6 @@ pub(crate) fn get_ctap_last_enroll_sample_status_message(status: u8) -> String {
         0x0c => "(this error number is available)".to_string(),
         0x0d => "User did not touch/swipe the authenticator.".to_string(),
         0x0e => "User did not lift the finger off the sensor.".to_string(),
-        _ => format!("0x{:X}", status),
+        _ => format!("0x{status:02X}"),
     }
 }

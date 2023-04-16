@@ -4,7 +4,6 @@
 [-> Examples](https://github.com/gebogebogebo/ctap-hid-fido2/blob/master/README.md#examples)
 
 */
-
 pub mod auth_data;
 mod ctapdef;
 mod ctaphid;
@@ -44,8 +43,9 @@ pub struct LibCfg {
 }
 
 impl LibCfg {
+    #[must_use]
     pub fn init() -> Self {
-        LibCfg {
+        Self {
             enable_log: false,
             use_pre_bio_enrollment: true,
             use_pre_credential_management: true,
@@ -55,16 +55,18 @@ impl LibCfg {
 }
 
 /// Get HID devices
+#[must_use]
 pub fn get_hid_devices() -> Vec<HidInfo> {
     hid::get_hid_devices(None)
 }
 
 /// Get HID FIDO devices
+#[must_use]
 pub fn get_fidokey_devices() -> Vec<HidInfo> {
     hid::get_hid_devices(Some(0xf1d0))
 }
 
-/// Simple factory to create FidoKeyHid
+/// Simple factory to create `FidoKeyHid`
 pub struct FidoKeyHidFactory {}
 
 impl FidoKeyHidFactory {
@@ -127,7 +129,7 @@ mod tests {
     #[test]
     fn test_enc_hmac_sha_256() {
         let key_str = "this is key.";
-        let hasher = digest::digest(&digest::SHA256, &key_str.as_bytes());
+        let hasher = digest::digest(&digest::SHA256, key_str.as_bytes());
         let key = <[u8; 32]>::try_from(hasher.as_ref()).unwrap();
 
         let message = "this is message.";
@@ -142,7 +144,7 @@ mod tests {
     #[test]
     fn test_enc_aes256_cbc() {
         let key_str = "this is key.";
-        let hasher = digest::digest(&digest::SHA256, &key_str.as_bytes());
+        let hasher = digest::digest(&digest::SHA256, key_str.as_bytes());
         let key = <[u8; 32]>::try_from(hasher.as_ref()).unwrap();
 
         let message = "this is message.";
@@ -154,7 +156,7 @@ mod tests {
         );
 
         let dec_data = encrypt::enc_aes256_cbc::decrypt_message_str(&key, &enc_data);
-        print!("- dec_data = {}", dec_data);
+        print!("- dec_data = {dec_data}");
         assert_eq!(dec_data, message);
     }
 }

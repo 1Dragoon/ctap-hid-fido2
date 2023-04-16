@@ -27,7 +27,7 @@ impl SharedSecret {
             })
             .map_err(Error::msg)?;
 
-        let mut res = SharedSecret {
+        let mut res = Self {
             public_key: p256::P256Key::from_bytes(my_public_key.as_ref())?.to_cose(),
             secret: [0; 32],
         };
@@ -36,22 +36,21 @@ impl SharedSecret {
         Ok(res)
     }
 
-    pub fn encrypt_pin(&self, pin: &str) -> Result<[u8; 16]> {
+    pub fn encrypt_pin(&self, pin: &str) -> [u8; 16] {
         self.encrypt(pin.as_bytes())
     }
 
-    pub fn encrypt(&self, data: &[u8]) -> Result<[u8; 16]> {
+    pub fn encrypt(&self, data: &[u8]) -> [u8; 16] {
         let hash = digest::digest(&digest::SHA256, data);
         let message = &hash.as_ref()[0..16];
         let enc = enc_aes256_cbc::encrypt_message(&self.secret, message);
         let mut out_bytes = [0; 16];
         out_bytes.copy_from_slice(&enc[0..16]);
-        Ok(out_bytes)
+        out_bytes
     }
 
-    pub fn decrypt_token(&self, data: &mut [u8]) -> Result<PinToken> {
+    pub fn decrypt_token(&self, data: &mut [u8]) -> PinToken {
         let dec = enc_aes256_cbc::decrypt_message(&self.secret, data);
-        let pin_token = PinToken::new(&dec);
-        Ok(pin_token)
+        PinToken::new(&dec)
     }
 }

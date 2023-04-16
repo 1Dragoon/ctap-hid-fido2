@@ -55,7 +55,7 @@ impl fmt::Display for Attestation {
             .append("- attstmt_x5c_num", &self.attstmt_x5c.len());
 
         for ex in &self.extensions {
-            strbuf.append("- extension", &format!("{:?}", ex));
+            strbuf.append("- extension", &format!("{ex:?}"));
         }
 
         write!(f, "{}", strbuf.build())
@@ -101,6 +101,7 @@ pub struct MakeCredentialArgs<'a> {
     pub extensions: Option<Vec<Mext>>,
 }
 impl<'a> MakeCredentialArgs<'a> {
+    #[must_use]
     pub fn builder() -> MakeCredentialArgsBuilder<'a> {
         MakeCredentialArgsBuilder::default()
     }
@@ -120,6 +121,7 @@ pub struct MakeCredentialArgsBuilder<'a> {
 }
 
 impl<'a> MakeCredentialArgsBuilder<'a> {
+    #[must_use]
     pub fn new(rpid: &str, challenge: &[u8]) -> MakeCredentialArgsBuilder<'a> {
         MakeCredentialArgsBuilder::<'_> {
             uv: Some(true),
@@ -129,27 +131,31 @@ impl<'a> MakeCredentialArgsBuilder<'a> {
         }
     }
 
-    pub fn pin(mut self, pin: &'a str) -> MakeCredentialArgsBuilder<'a> {
+    #[must_use]
+    pub const fn pin(mut self, pin: &'a str) -> MakeCredentialArgsBuilder<'a> {
         self.pin = Some(pin);
         //self.uv = Some(false);
         self.uv = None;
         self
     }
 
-    pub fn without_pin_and_uv(mut self) -> MakeCredentialArgsBuilder<'a> {
+    #[must_use]
+    pub const fn without_pin_and_uv(mut self) -> MakeCredentialArgsBuilder<'a> {
         self.pin = None;
         self.uv = None;
         self
     }
 
-    /// Adds an credential_id to the excludeList, preventing further credentials being created on
+    /// Adds an `credential_id` to the excludeList, preventing further credentials being created on
     /// the same authenticator
+    #[must_use]
     pub fn exclude_authenticator(mut self, credential_id: &[u8]) -> MakeCredentialArgsBuilder<'a> {
         self.exclude_list.push(credential_id.to_vec());
         self
     }
 
-    pub fn key_type(
+    #[must_use]
+    pub const fn key_type(
         mut self,
         key_type: CredentialSupportedKeyType,
     ) -> MakeCredentialArgsBuilder<'a> {
@@ -157,11 +163,13 @@ impl<'a> MakeCredentialArgsBuilder<'a> {
         self
     }
 
+    #[must_use]
     pub fn extensions(mut self, extensions: &[Mext]) -> MakeCredentialArgsBuilder<'a> {
         self.extensions = Some(extensions.to_vec());
         self
     }
 
+    #[must_use]
     pub fn user_entity(
         mut self,
         user_entity: &PublicKeyCredentialUserEntity,
@@ -170,11 +178,13 @@ impl<'a> MakeCredentialArgsBuilder<'a> {
         self
     }
 
-    pub fn resident_key(mut self) -> MakeCredentialArgsBuilder<'a> {
+    #[must_use]
+    pub const fn resident_key(mut self) -> MakeCredentialArgsBuilder<'a> {
         self.rk = Some(true);
         self
     }
 
+    #[must_use]
     pub fn build(self) -> MakeCredentialArgs<'a> {
         MakeCredentialArgs {
             rpid: self.rpid,

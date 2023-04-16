@@ -8,12 +8,15 @@ pub struct PublicKeyCredentialRpEntity {
     pub name: String,
 }
 impl PublicKeyCredentialRpEntity {
-    pub fn get_id(self: &mut PublicKeyCredentialRpEntity, cbor: &Value) -> Self {
+    #[must_use]
+    pub fn get_id(&mut self, cbor: &Value) -> Self {
         let mut ret = self.clone();
         ret.id = util::cbor_get_string_from_map(cbor, "id").unwrap_or_default();
         ret
     }
-    pub fn get_name(self: &mut PublicKeyCredentialRpEntity, cbor: &Value) -> Self {
+
+    #[must_use]
+    pub fn get_name(&mut self, cbor: &Value) -> Self {
         let mut ret = self.clone();
         ret.name = util::cbor_get_string_from_map(cbor, "name").unwrap_or_default();
         ret

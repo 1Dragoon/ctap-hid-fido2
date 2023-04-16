@@ -11,7 +11,7 @@ use serde_cbor::Value;
 use std::io::Cursor;
 
 fn parse_cbor_authdata(
-    authdata: Vec<u8>,
+    authdata: &[u8],
     ass: &mut get_assertion_params::Assertion,
     shared_secret: Option<&SharedSecret>,
 ) -> Result<()> {
@@ -29,7 +29,7 @@ fn parse_cbor_authdata(
 
     // flags(1)
     let byte = authdata[index];
-    ass.flags = Flags::parse(byte).unwrap();
+    ass.flags = Flags::parse(byte);
     index += 1;
 
     // signCount(4)
@@ -95,7 +95,7 @@ fn parse_cbor_authdata(
 
 pub fn parse_cbor(
     bytes: &[u8],
-    shared_secret: Option<SharedSecret>,
+    shared_secret: &Option<SharedSecret>,
 ) -> Result<get_assertion_params::Assertion> {
     let mut ass = get_assertion_params::Assertion::default();
     let maps = util::cbor_bytes_to_map(bytes)?;
@@ -105,7 +105,7 @@ pub fn parse_cbor(
                 0x01 => ass.credential_id = util::cbor_get_bytes_from_map(val, "id")?,
                 0x02 => {
                     if let Value::Bytes(xs) = val {
-                        parse_cbor_authdata(xs.to_vec(), &mut ass, shared_secret.as_ref())?;
+                        parse_cbor_authdata(xs, &mut ass, shared_secret.as_ref())?;
                     }
                 }
                 0x03 => ass.signature = util::cbor_value_to_vec_u8(val)?,
@@ -113,7 +113,7 @@ pub fn parse_cbor(
                     ass.user = PublicKeyCredentialUserEntity::default()
                         .get_id(val)
                         .get_name(val)
-                        .get_display_name(val)
+                        .get_display_name(val);
                 }
                 0x05 => ass.number_of_credentials = util::cbor_value_to_num(val)?,
                 0x06 => (), // TODO userSelected
