@@ -1,4 +1,4 @@
-use crate::HidParam;
+use crate::KeyID;
 use anyhow::{anyhow, Result};
 use hidapi::HidApi;
 use std::ffi::CString;
@@ -24,6 +24,12 @@ pub use make_credential::{
     CredentialSupportedKeyType, Extension as CredentialExtension, MakeCredentialArgsBuilder,
 };
 
+pub trait FidoKey {
+    fn new(params: &[crate::KeyID], cfg: &crate::LibCfg) -> Result<Self> where Self: std::marker::Sized;
+    fn write(&self, cmd: &[u8]) -> Result<usize, String>;
+    fn read(&self) -> Result<Vec<u8>, String>;
+}
+
 pub struct FidoKeyHid {
     device_internal: hidapi::HidDevice,
     pub enable_log: bool,
@@ -32,8 +38,8 @@ pub struct FidoKeyHid {
     pub keep_alive_msg: String,
 }
 
-impl FidoKeyHid {
-    pub fn new(params: &[crate::HidParam], cfg: &crate::LibCfg) -> Result<Self> {
+impl FidoKey for FidoKeyHid {
+    fn new(params: &[crate::KeyID], cfg: &crate::LibCfg) -> Result<Self> {
         let api = HidApi::new().expect("Failed to create HidApi instance");
         for param in params {
             let path = get_path(&api, param);
@@ -55,13 +61,13 @@ impl FidoKeyHid {
         Err(anyhow!("Failed to open device."))
     }
 
-    pub(crate) fn write(&self, cmd: &[u8]) -> Result<usize, String> {
+    fn write(&self, cmd: &[u8]) -> Result<usize, String> {
         self.device_internal
             .write(cmd)
             .map_err(|_| "write error".into())
     }
 
-    pub(crate) fn read(&self) -> Result<Vec<u8>, String> {
+    fn read(&self) -> Result<Vec<u8>, String> {
         let mut buf: Vec<u8> = vec![0; 64];
         self.device_internal
             .read(&mut buf[..])
@@ -71,19 +77,24 @@ impl FidoKeyHid {
 }
 
 /// Abstraction for getting a path from a provided `HidParam`
-fn get_path(api: &hidapi::HidApi, param: &crate::HidParam) -> Option<CString> {
+fn get_path(api: &hidapi::HidApi, param: &crate::KeyID) -> Option<CString> {
     match param {
-        HidParam::Path(s) => {
+        KeyID::Path(s) => {
             if let Ok(p) = CString::new(s.as_bytes()) {
                 return Some(p);
             }
         }
-        HidParam::VidPid { vid, pid } => {
+        KeyID::VidPid { vid, pid } => {
             let devices = api.device_list();
             for x in devices {
                 if x.vendor_id() == *vid && x.product_id() == *pid {
                     return Some(x.path().to_owned());
                 }
+            }
+        }
+        KeyID::Reader(s) => {
+            if let Ok(p) = CString::new(s.as_bytes()) {
+                return Some(p);
             }
         }
     };

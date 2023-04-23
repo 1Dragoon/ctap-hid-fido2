@@ -55,13 +55,14 @@ mod tests {
     use super::SubCommand as PinCmd;
     use super::*;
     use crate::ctaphid;
+    use crate::fidokey::FidoKey;
     use crate::fidokey::FidoKeyHid;
     use crate::Cfg;
-    use crate::HidParam;
+    use crate::KeyID;
 
     #[test]
     fn test_client_pin_get_keyagreement() {
-        let hid_params = HidParam::get();
+        let hid_params = KeyID::get();
         let device = FidoKeyHid::new(&hid_params, &Cfg::init()).unwrap();
         let cid = ctaphid::ctaphid_init(&device).unwrap();
 

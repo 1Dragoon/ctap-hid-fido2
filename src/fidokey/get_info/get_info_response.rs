@@ -71,6 +71,7 @@ pub fn parse_cbor(bytes: &[u8]) -> Result<get_info_params::Info> {
                 0x10 => info.max_rpids_for_set_min_pin_length = util::cbor_value_to_num(val)?,
                 0x11 => info.preferred_platform_uv_attempts = util::cbor_value_to_num(val)?,
                 0x12 => info.uv_modality = util::cbor_value_to_num(val)?,
+                0x13 => info.certifications = util::cbor_get_string_from_map(val, "FIDO").expect("fuck"),
                 0x14 => info.remaining_discoverable_credentials = util::cbor_value_to_num(val)?,
                 _ => println!("parse_cbor_member - unknown info {member:?}"),
             }

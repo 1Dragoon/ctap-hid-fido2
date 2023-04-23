@@ -24,6 +24,7 @@ pub struct Info {
     pub max_rpids_for_set_min_pin_length: u32,
     pub preferred_platform_uv_attempts: u32,
     pub uv_modality: u32,
+    pub certifications: String,
     pub remaining_discoverable_credentials: u32,
 }
 
@@ -73,6 +74,10 @@ impl fmt::Display for Info {
                 &format!("{:?}", self.preferred_platform_uv_attempts),
             )
             .append("- uv_modality", &format!("{:?}", self.uv_modality))
+            .append(
+                "- certifications",
+                &format!("{:?}", self.certifications),
+            )
             .append(
                 "- remaining_discoverable_credentials",
                 &format!("{:?}", self.remaining_discoverable_credentials),

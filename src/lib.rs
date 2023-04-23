@@ -15,6 +15,7 @@ mod encrypt {
     pub mod shared_secret;
 }
 mod hmac_ext;
+pub mod pcsc;
 mod pintoken;
 pub mod public_key;
 pub mod public_key_credential_descriptor;
@@ -27,10 +28,11 @@ pub mod verifier;
 use anyhow::{anyhow, Result};
 
 pub mod fidokey;
+use fidokey::FidoKey;
 pub use fidokey::FidoKeyHid;
 
 mod hid;
-pub use hid::{HidInfo, HidParam};
+pub use hid::{HidInfo, KeyID};
 
 pub type Cfg = LibCfg;
 
@@ -63,6 +65,7 @@ pub fn get_hid_devices() -> Vec<HidInfo> {
 /// Get HID FIDO devices
 #[must_use]
 pub fn get_fidokey_devices() -> Vec<HidInfo> {
+    
     hid::get_hid_devices(Some(0xf1d0))
 }
 
@@ -71,24 +74,21 @@ pub struct FidoKeyHidFactory {}
 
 impl FidoKeyHidFactory {
     pub fn create(cfg: &LibCfg) -> Result<FidoKeyHid> {
-        let device = {
-            let mut devs = get_fidokey_devices();
-            if devs.is_empty() {
-                return Err(anyhow!("FIDO device not found."));
-            }
-            if devs.len() > 1 {
-                return Err(anyhow!("Multiple FIDO devices found."));
-            }
+        let mut devs = get_fidokey_devices();
+        if devs.is_empty() {
+            return Err(anyhow!("FIDO device not found."));
+        }
+        if devs.len() > 1 {
+            return Err(anyhow!("Multiple FIDO devices found."));
+        }
 
-            let device = devs.pop().unwrap().param;
+        let device = devs.pop().unwrap().param;
 
-            let params = vec![device];
-            FidoKeyHid::new(&params, cfg)?
-        };
-        Ok(device)
+        let params = vec![device];
+        FidoKeyHid::new(&params, cfg)
     }
 
-    pub fn create_by_params(params: &[HidParam], cfg: &LibCfg) -> Result<FidoKeyHid> {
+    pub fn create_by_params(params: &[KeyID], cfg: &LibCfg) -> Result<FidoKeyHid> {
         FidoKeyHid::new(params, cfg)
     }
 }

@@ -13,12 +13,14 @@ pub struct DeviceInfo {
 
 /// HID device vendor ID , product ID
 #[derive(Clone)]
-pub enum HidParam {
+pub enum KeyID {
     /// Specified when looking for any FIDO device of a certain kind
     VidPid { vid: u16, pid: u16 },
     /// Specified when looking to open a specific device. This is non-ambiguous
     /// when multiple devices of the same kind are connected.
     Path(String),
+    /// For PCSC readers
+    Reader(String),
 }
 
 /// Struct that contains information about found HID devices. Also
@@ -36,10 +38,10 @@ pub struct HidInfo {
     pub info: String,
     /// An parameter structure to be used to open this device
     /// later. This is almost always HidParam::Path.
-    pub param: HidParam,
+    pub param: KeyID,
 }
 
-impl HidParam {
+impl KeyID {
     /// Generate HID parameters for FIDO key devices
     #[must_use]
     pub fn get() -> Vec<Self> {
@@ -118,11 +120,11 @@ pub fn get_hid_devices(usage_page: Option<u16>) -> Vec<HidInfo> {
             memo.add(format!(" path={:?}", dev.path()).as_str());
 
             let param = dev.path().to_str().map_or_else(
-                |_| HidParam::VidPid {
+                |_| KeyID::VidPid {
                     vid: dev.vendor_id(),
                     pid: dev.product_id(),
                 },
-                |s| HidParam::Path(s.to_string()),
+                |s| KeyID::Path(s.to_string()),
             );
 
             res.push(HidInfo {
